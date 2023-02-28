@@ -39,15 +39,28 @@ class BertSelfAttention(nn.Module):
     # attention scores are calculated by multiply query and key 
     # and get back a score matrix S of [bs, num_attention_heads, seq_len, seq_len]
     # S[*, i, j, k] represents the (unnormalized)attention score between the j-th and k-th token, given by i-th attention head
+    # Tensor shape after reshaping and permuting: (batch_size, heads, seq_length, seq_length)
+    query = query.permute(0,2,1,3) # (batch, num_heads, seq, head_dim)
+    key = key.permute(0,2,3,1) # (batch, num_heads, head_dim, seq)
+    value = value.permute(0,2,1,3) # batch, num_heads, seq, head_dim)
+
+    S = torch.matmul(query, key)/math.sqrt(cast(key.size(), float32))
+    print("S size", S.size())
+    
     # before normalizing the scores, use the attention mask to mask out the padding token scores
-    # Note again: in the attention_mask non-padding tokens with 0 and padding tokens with a large negative number 
+    # Note again: in the attention_mask non-padding tokens with 0 and padding tokens with a large negative number
+    if attention_mask is not none:
+        S += -1e9 * attention_mask
 
     # normalize the scores
     # multiply the attention scores to the value and get back V'
+    S = nn.Softmax(S, dim=1)
+    V = torch.matmul(S, value) #(bs, nh, seq_len, hs)
+    
     # next, we need to concat multi-heads and recover the original shape [bs, seq_len, num_attention_heads * attention_head_size = hidden_size]
-
-    ### TODO
-    raise NotImplementedError
+    V = V.transpose(0, 1)
+    V = torch.cat(list(V))
+    return V
 
 
   def forward(self, hidden_states, attention_mask):
