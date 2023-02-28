@@ -89,10 +89,10 @@ class BertLayer(nn.Module):
     self.attention_layer_norm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
     self.attention_dropout = nn.Dropout(config.hidden_dropout_prob)
     # feed forward
-    self.interm_dense = nn.Linear(config.hidden_size, config.intermediate_size)
-    self.interm_af = F.gelu
+    self.interm_dense = nn.Linear(config.hidden_size, config.intermediate_size) #linear transformation
+    self.interm_af = F.gelu #gaussian linear error
     # another add-norm
-    self.out_dense = nn.Linear(config.intermediate_size, config.hidden_size)
+    self.out_dense = nn.Linear(config.intermediate_size, config.hidden_size) 
     self.out_layer_norm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
     self.out_dropout = nn.Dropout(config.hidden_dropout_prob)
 
@@ -110,7 +110,7 @@ class BertLayer(nn.Module):
     raise NotImplementedError
 
 
-  def forward(self, hidden_states, attention_mask):
+  def forward(self, hidden_states, attention_mask): #how is this different from the other forward function
     """
     hidden_states: either from the embedding layer (first bert layer) or from the previous bert layer
     as shown in the left of Figure 1 of https://arxiv.org/pdf/1706.03762.pdf 
@@ -120,8 +120,21 @@ class BertLayer(nn.Module):
     3. a feed forward layer
     4. a add-norm that takes the input and output of the feed forward layer
     """
-    ### TODO
-    raise NotImplementedError
+    """
+    hidden_states: [bs, seq_len, hidden_state]
+    attention_mask: [bs, 1, 1, seq_len]
+    output: [bs, seq_len, hidden_state]
+    """
+    output = self.self_attention(hidden_states, attention_mask) # output: [bs, seq_len, hidden_state]
+
+    vec = self.add_norm(hidden_states, output, self.attention_dense, self.attention_dropout, self.attention_layer_norm)
+    new_vec = self.interm_dense(vec) #converts to intermediete size
+    output = self.interm_af(new_vec)
+
+    return_value = self.add_norm(vec, output, self.out_dense, self.out_dropout, self.out_layer_norm)
+
+    return return_value
+
 
 
 
@@ -162,7 +175,7 @@ class BertModel(BertPreTrainedModel):
 
     # Get word embedding from self.word_embedding into input_embeds.
     inputs_embeds = None
-    input_embeds = self.word_embedding(input_ids) #dictionary mapping index to word embedding? What is input_embeds supposed to be?
+    input_embeds = self.word_embedding(input_ids) 
 
 
     # Get position index and position embedding from self.pos_embedding into pos_embeds.
