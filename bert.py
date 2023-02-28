@@ -40,16 +40,16 @@ class BertSelfAttention(nn.Module):
     # and get back a score matrix S of [bs, num_attention_heads, seq_len, seq_len]
     # S[*, i, j, k] represents the (unnormalized)attention score between the j-th and k-th token, given by i-th attention head
     # Tensor shape after reshaping and permuting: (batch_size, heads, seq_length, seq_length)
-    query = query.permute(0,2,1,3) # (batch, num_heads, seq, head_dim)
-    key = key.permute(0,2,3,1) # (batch, num_heads, head_dim, seq)
-    value = value.permute(0,2,1,3) # batch, num_heads, seq, head_dim)
+    print(query.size())
 
-    S = torch.matmul(query, key)/math.sqrt(cast(key.size(), float32))
+    key = key.permute(0,1,3,2) # (batch, num_heads, head_dim, seq)
+
+    S = torch.matmul(query, key)/math.sqrt(key.size()[0]) #not sure if it's [0] or [1]
     print("S size", S.size())
     
     # before normalizing the scores, use the attention mask to mask out the padding token scores
     # Note again: in the attention_mask non-padding tokens with 0 and padding tokens with a large negative number
-    if attention_mask is not none:
+    if attention_mask is not None:
         S += -1e9 * attention_mask
 
     # normalize the scores
@@ -105,7 +105,8 @@ class BertLayer(nn.Module):
     dropout: the dropout to be applied 
     ln_layer: the layer norm to be applied
     """
-    # Hint: Remember that BERT applies to the output of each sub-layer, before it is added to the sub-layer input and normalized 
+    # Hint: Remember that BERT applies to the output of each sub-layer, before it is added to the sub-layer input and normalized
+    print(output.size())
     output = dropout(dense_layer(output))
     sum = input + output
     y = ln_layer(sum)
