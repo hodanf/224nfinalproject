@@ -143,22 +143,20 @@ class BertModel(BertPreTrainedModel):
 
     self.init_weights()
 
-  def embed(self, input_ids):
+  def embed(self, input_ids): # Simrin to do
     input_shape = input_ids.size()
     seq_length = input_shape[1]
 
     # Get word embedding from self.word_embedding into input_embeds.
     inputs_embeds = None
-    ### TODO
-    raise NotImplementedError
+    input_embeds = self.word_embedding(input_ids) #dictionary mapping index to word embedding? What is input_embeds supposed to be?
 
 
     # Get position index and position embedding from self.pos_embedding into pos_embeds.
-    pos_ids = self.position_ids[:, :seq_length]
+    pos_ids = self.position_ids[:, :seq_length]  # matrix x seq_length
 
     pos_embeds = None
-    ### TODO
-    raise NotImplementedError
+    pos_embeds = self.pos_embedding(pos_ids)
 
 
     # Get token type ids, since we are not consider token type, just a placeholder.
@@ -166,9 +164,11 @@ class BertModel(BertPreTrainedModel):
     tk_type_embeds = self.tk_type_embedding(tk_type_ids)
 
     # Add three embeddings together; then apply embed_layer_norm and dropout and return.
-    ### TODO
-    raise NotImplementedError
+    input = input_embeds + pos_embeds + tk_type_embeds
 
+    output = self.embed_layer_norm(input)
+    output = self.embed_dropout(output)
+    return output
 
   def encode(self, hidden_states, attention_mask):
     """
