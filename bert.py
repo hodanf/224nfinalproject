@@ -40,12 +40,12 @@ class BertSelfAttention(nn.Module):
     # and get back a score matrix S of [bs, num_attention_heads, seq_len, seq_len]
     # S[*, i, j, k] represents the (unnormalized)attention score between the j-th and k-th token, given by i-th attention head
     # Tensor shape after reshaping and permuting: (batch_size, heads, seq_length, seq_length)
-    print(query.size())
+    #print(query.size())
 
     key = key.permute(0,1,3,2) # (batch, num_heads, head_dim, seq)
 
-    S = torch.matmul(query, key)/math.sqrt(key.size()[0]) #not sure if it's [0] or [1]
-    print("S size", S.size())
+    S = torch.matmul(query, key)/math.sqrt(key.size()[2]) #not sure if it's [0] or [1] maybe it's [2]
+    #print("S size", S.size())
     
     # before normalizing the scores, use the attention mask to mask out the padding token scores
     # Note again: in the attention_mask non-padding tokens with 0 and padding tokens with a large negative number
@@ -59,7 +59,9 @@ class BertSelfAttention(nn.Module):
     
     # next, we need to concat multi-heads and recover the original shape [bs, seq_len, num_attention_heads * attention_head_size = hidden_size]
     V = V.transpose(0, 1)
-    V = torch.cat(list(V))
+
+    V = torch.cat(list(V), 2)
+    
     return V
 
 
@@ -106,10 +108,8 @@ class BertLayer(nn.Module):
     ln_layer: the layer norm to be applied
     """
     # Hint: Remember that BERT applies to the output of each sub-layer, before it is added to the sub-layer input and normalized
-    print(output.size())
     output = dropout(dense_layer(output))
-    sum = input + output
-    y = ln_layer(sum)
+    y = ln_layer(input + output)
     return y
 
 
@@ -128,13 +128,15 @@ class BertLayer(nn.Module):
     attention_mask: [bs, 1, 1, seq_len]
     output: [bs, seq_len, hidden_state]
     """
+    #print(hidden_states)
     output = self.self_attention(hidden_states, attention_mask) # output: [bs, seq_len, hidden_state]
 
     vec = self.add_norm(hidden_states, output, self.attention_dense, self.attention_dropout, self.attention_layer_norm)
     new_vec = self.interm_dense(vec) #converts to intermediete size
-    output = self.interm_af(new_vec)
+    new_output = self.interm_af(new_vec)
 
-    return_value = self.add_norm(vec, output, self.out_dense, self.out_dropout, self.out_layer_norm)
+    return_value = self.add_norm(vec, new_output, self.out_dense, self.out_dropout, self.out_layer_norm)
+    #print(return_value.size())
 
     return return_value
 
