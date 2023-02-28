@@ -54,7 +54,7 @@ class BertSelfAttention(nn.Module):
 
     # normalize the scores
     # multiply the attention scores to the value and get back V'
-    S = nn.Softmax(S, dim=1)
+    S = nn.Softmax(dim=-1)(S)
     V = torch.matmul(S, value) #(bs, nh, seq_len, hs)
     
     # next, we need to concat multi-heads and recover the original shape [bs, seq_len, num_attention_heads * attention_head_size = hidden_size]
@@ -106,8 +106,10 @@ class BertLayer(nn.Module):
     ln_layer: the layer norm to be applied
     """
     # Hint: Remember that BERT applies to the output of each sub-layer, before it is added to the sub-layer input and normalized 
-    ### TODO
-    raise NotImplementedError
+    output = dropout(dense_layer(output))
+    sum = input + output
+    y = ln_layer(sum)
+    return y
 
 
   def forward(self, hidden_states, attention_mask):
