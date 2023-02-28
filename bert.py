@@ -44,24 +44,22 @@ class BertSelfAttention(nn.Module):
 
     key = key.permute(0,1,3,2) # (batch, num_heads, head_dim, seq)
 
-    S = torch.matmul(query, key)/math.sqrt(key.size()[2]) #not sure if it's [0] or [1] maybe it's [2]
+    S = torch.matmul(query, key)/math.sqrt(key.shape[-2]) #not sure if it's [0] or [1] maybe it's [2]
     #print("S size", S.size())
     
     # before normalizing the scores, use the attention mask to mask out the padding token scores
     # Note again: in the attention_mask non-padding tokens with 0 and padding tokens with a large negative number
     if attention_mask is not None:
-        S += -1e9 * attention_mask
+        S += attention_mask
 
     # normalize the scores
     # multiply the attention scores to the value and get back V'
     S = nn.Softmax(dim=-1)(S)
     V = torch.matmul(S, value) #(bs, nh, seq_len, hs)
-    
     # next, we need to concat multi-heads and recover the original shape [bs, seq_len, num_attention_heads * attention_head_size = hidden_size]
-    V = V.transpose(0, 1)
-
-    V = torch.cat(list(V), 2)
-    
+    V = V.transpose(1, 2)
+    V= V.reshape((V.shape[0],V.shape[1], -1))
+    # V = torch.cat(list(V), 2)
     return V
 
 
@@ -122,11 +120,6 @@ class BertLayer(nn.Module):
     2. a add-norm that takes the input and output of the multi-head attention layer
     3. a feed forward layer
     4. a add-norm that takes the input and output of the feed forward layer
-    """
-    """
-    hidden_states: [bs, seq_len, hidden_state]
-    attention_mask: [bs, 1, 1, seq_len]
-    output: [bs, seq_len, hidden_state]
     """
     #print(hidden_states)
     output = self.self_attention(hidden_states, attention_mask) # output: [bs, seq_len, hidden_state]
