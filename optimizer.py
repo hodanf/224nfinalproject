@@ -53,28 +53,25 @@ class AdamW(Optimizer):
                 # 1- Update first and second moments of the gradients
                 
                 # initialize self.state if it hasn't been initialized
-                if state["t"] is None:
+                if state == {}:
                     state["t"] = 0
                     state["m"] = 0
                     state["v"] = 0
-                
-                state["t"] += 0
+                state["t"] += 1
                 beta1 = group["betas"][0]
                 beta2 = group["betas"][1]
                 state["m"] = beta1 * state["m"] + (1 - beta1) * grad
-                state["v"] = beta2 * state["v"] + (1 - beta2) * grad^2
+                state["v"] = beta2 * state["v"] + (1 - beta2) * (grad ** 2)
                     
                 # 2- Apply bias correction
                 #    (using the "efficient version" given in https://arxiv.org/abs/1412.6980;
                 #     also given in the pseudo-code in the project description).
                 # 3- Update parameters (p.data).
-                alpha = alpha * math.sqrt(1 - beta2^state["t"]) / (1 - beta1^state["t"])
-                p.data = p.data - alpha * state["m"] / (math.sqrt(state["v"]) + group["eps"])
+                alpha = alpha * math.sqrt(1 - beta2 ** state["t"]) / (1 - beta1 ** state["t"])
+                p.data = p.data - alpha * state["m"] / (torch.sqrt(state["v"]) + group["eps"])
                 
                 # 4- After that main gradient-based update, update again using weight decay
                 #    (incorporating the learning rate again).
-
+                p.data -= alpha * group["weight_decay"]
                 
-
-
         return loss
