@@ -45,7 +45,7 @@ class BertSentimentClassifier(torch.nn.Module):
                 param.requires_grad = True
 
         ### TODO
-        self.dropout = torch.nn.Dropout(config.dropout_prob)
+        self.dropout = torch.nn.Dropout(config.hidden_dropout_prob)
         self.classifier = torch.nn.Linear(self.bert.config.hidden_size, self.num_labels)
 
 
@@ -57,11 +57,9 @@ class BertSentimentClassifier(torch.nn.Module):
         ### TODO
 
         # Get the last hidden state of the [CLS] token from BERT
-        last_hidden_state, pooler_output = self.bert(
-            input_ids=input_ids, attention_mask=attention_mask, return_dict=False
-        )
+        outputs = self.bert(input_ids, attention_mask)
         
-        pooled_output = self.dropout(pooler_output)
+        pooled_output = self.dropout(outputs['pooler_output'])
         logits = self.classifier(pooled_output)
 
         return logits
