@@ -52,7 +52,10 @@ class MultitaskBERT(nn.Module):
             elif config.option == 'finetune':
                 param.requires_grad = True
         ### TODO
-        raise NotImplementedError
+        self.dropout = torch.nn.Dropout(config.hidden_dropout_prob)
+        self.sentiment_classifier = torch.nn.Linear(BERT_HIDDEN_SIZE, N_SENTIMENT_CLASSES)
+        self.paraphrase_classifier = torch.nn.Linear(BERT_HIDDEN_SIZE * 2, 1)
+        self.similarity = torch.nn.Linear(BERT_HIDDEN_SIZE * 2, 1) # read paper
 
 
     def forward(self, input_ids, attention_mask):
@@ -62,7 +65,11 @@ class MultitaskBERT(nn.Module):
         # When thinking of improvements, you can later try modifying this
         # (e.g., by adding other layers).
         ### TODO
-        raise NotImplementedError
+        outputs = self.bert(input_ids, attention_mask) # pretrained bert embeddings
+        embeddings = self.dropout(outputs['pooler_output'])# BERT embeddings
+
+        return embeddings
+        
 
 
     def predict_sentiment(self, input_ids, attention_mask):
@@ -72,7 +79,9 @@ class MultitaskBERT(nn.Module):
         Thus, your output should contain 5 logits for each sentence.
         '''
         ### TODO
-        raise NotImplementedError
+        embeddings = self.forward(input_ids, attention_mask)
+        logits = self.sentiment_classifier(embeddings)
+        return logits
 
 
     def predict_paraphrase(self,
@@ -83,7 +92,11 @@ class MultitaskBERT(nn.Module):
         during evaluation, and handled as a logit by the appropriate loss function.
         '''
         ### TODO
-        raise NotImplementedError
+        embeddings1 = self.forward(input_ids_1, attention_mask_1)
+        embeddings2 = self.forward(input_ids_2, attention_mask_2)
+        logit = self.paraphrase_classifier(torch.cat((embeddings1, embeddings2), dim=-1))
+        return logit
+        
 
 
     def predict_similarity(self,
@@ -93,9 +106,11 @@ class MultitaskBERT(nn.Module):
         Note that your output should be unnormalized (a logit); it will be passed to the sigmoid function
         during evaluation, and handled as a logit by the appropriate loss function.
         '''
-        ### TODO
-        raise NotImplementedError
-
+        ### TODO cosine similarity as an extension here
+        embeddings1 = self.forward(input_ids_1, attention_mask_1)
+        embeddings2 = self.forward(input_ids_2, attention_mask_2)
+        logit = self.similarity(torch.cat((embeddings1, embeddings2), dim=-1))
+        return logit
 
 
 
@@ -115,6 +130,7 @@ def save_model(model, optimizer, args, config, filepath):
 
 
 ## Currently only trains on sst dataset
+# modify the train_multitask
 def train_multitask(args):
     device = torch.device('cuda') if args.use_gpu else torch.device('cpu')
     # Load data
