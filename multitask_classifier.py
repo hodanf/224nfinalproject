@@ -180,7 +180,6 @@ def train_multitask(args):
     lr = args.lr
     optimizer = AdamW(model.parameters(), lr=lr)
     best_dev_acc = 0
-    print(args.batch_size)
 
     # Run for the specified number of epochs
     for epoch in range(args.epochs):
@@ -204,7 +203,6 @@ def train_multitask(args):
 
             train_loss['sst'] += loss.item()
             num_batches += 1
-            print('made it 1')
 
         train_loss['sst'] = train_loss['sst'] / (num_batches)
 
@@ -230,7 +228,6 @@ def train_multitask(args):
 
             train_loss['para'] += loss
             num_batches += 1
-            print('made it 2')
 
         train_loss['para'] = train_loss['para'] / (num_batches)
         num_batches = 0
@@ -255,7 +252,6 @@ def train_multitask(args):
 
             train_loss['sts'] += loss
             num_batches += 1
-            print('made it 3')
 
         train_loss['sts'] = train_loss['sts'] / (num_batches)
         
