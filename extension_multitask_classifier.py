@@ -70,7 +70,11 @@ class MultitaskBERT(nn.Module):
 
         return embeddings
         
-
+    def cosine_similarity(embeddings1, embeddings2):
+        #Calculates the cosine similarity between two batches of embeddings, which is the dot pdt of the normalized embeddings
+        norms1 = torch.norm(embeddings1, dim=-1)
+        norms2 = torch.norm(embeddings2, dim=-1)
+        return (norms1 @ norms2).T
 
     def predict_sentiment(self, input_ids, attention_mask):
         '''Given a batch of sentences, outputs logits for classifying sentiment.
@@ -109,7 +113,8 @@ class MultitaskBERT(nn.Module):
         ### TODO cosine similarity as an extension here
         embeddings1 = self.forward(input_ids_1, attention_mask_1)
         embeddings2 = self.forward(input_ids_2, attention_mask_2)
-        logit = self.similarity(torch.cat((embeddings1, embeddings2), dim=-1))
+        cosine_sims = cosine_similarity(embeddings1, embeddings2)
+        logit = self.similarity(cosine_sims)
         return logit
 
 
