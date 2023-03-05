@@ -177,8 +177,44 @@ def train_multitask(args):
     model = MultitaskBERT(config)
     model = model.to(device)
 
-    lr = args.lr
-    optimizer = AdamW(model.parameters(), lr=lr)
+    # lr = args.lr
+    
+    # extension 1: layer-wise learning rate decay
+    lr = args.layer_learning_rate[0]
+    lr_group = [lr * pow(args.layer_learning_rate_decay, 11 - i) for i in range(12)]
+    groups = [(f'layers.{i}.', lr * pow(args.layer_learning_rate_decay, 11 - i)) for i in range(12)]
+    #print(groups)
+    parameters = []
+    
+    layer_names = []
+    for idx, (name, param) in enumerate(model.named_parameters()):
+        layer_names.append(name)
+        #print(f'{idx}: {name}')
+        
+    parameters = []
+    
+    next_num = 1
+
+    # store params & learning rates
+    for idx, name in enumerate(layer_names):
+        
+        # display info
+        
+        if str(next_num) in name:
+            next_num += 1
+        
+        print(f'{idx}: lr = {lr_group[next_num - 1]:.6f}, {name}')
+
+        
+        # append layer parameters
+        parameters += [{'params': [p for n, p in model.named_parameters() if n == name],
+                        'lr':     lr_group[next_num - 1]}]
+    
+    
+    # extension 1 done
+    
+    optimizer = AdamW(parameters)
+    print('made it')
     best_dev_acc = 0
 
     # Run for the specified number of epochs
@@ -199,6 +235,7 @@ def train_multitask(args):
             loss = F.cross_entropy(logits, b_labels.view(-1), reduction='sum') / args.batch_size
 
             loss.backward()
+
             optimizer.step()
 
             train_loss['sst'] += loss.item()
@@ -316,6 +353,16 @@ def get_args():
     parser.add_argument("--hidden_dropout_prob", type=float, default=0.3)
     parser.add_argument("--lr", type=float, help="learning rate, default lr for 'pretrain': 1e-3, 'finetune': 1e-5",
                         default=1e-5)
+    
+    # parameters for extension 1: layer-wise learning rate decay
+    parser.add_argument("--layer_learning_rate",
+                        type=float,
+                        nargs='+',
+                        default=[2e-5] * 12,
+                        help="learning rate in each group")
+    parser.add_argument("--layer_learning_rate_decay",
+                        type=float,
+                        default=0.95)
 
     args = parser.parse_args()
     return args
