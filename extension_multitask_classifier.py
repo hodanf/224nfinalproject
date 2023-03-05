@@ -114,8 +114,11 @@ class MultitaskBERT(nn.Module):
         embeddings1 = self.forward(input_ids_1, attention_mask_1)
         embeddings2 = self.forward(input_ids_2, attention_mask_2)
         cosine_sims = cosine_similarity(embeddings1, embeddings2)
-        logit = self.similarity(cosine_sims)
-        return logit
+        #logit = self.similarity(cosine_sims)
+        targets = torch.ones_like(cosine_sims)
+        loss = F.cosine_embedding_loss(embeddings1, embeddings2, targets)
+        return loss
+    
 
 
 
