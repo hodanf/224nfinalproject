@@ -188,13 +188,11 @@ def train_multitask(args):
     lr = args.layer_learning_rate[0]
     lr_group = [lr * pow(args.layer_learning_rate_decay, 11 - i) for i in range(12)]
     groups = [(f'layers.{i}.', lr * pow(args.layer_learning_rate_decay, 11 - i)) for i in range(12)]
-    #print(groups)
     parameters = []
     
     layer_names = []
     for idx, (name, param) in enumerate(model.named_parameters()):
         layer_names.append(name)
-        #print(f'{idx}: {name}')
         
     parameters = []
     
@@ -208,9 +206,8 @@ def train_multitask(args):
         if str(next_num) in name:
             next_num += 1
         
-        print(f'{idx}: lr = {lr_group[next_num - 1]:.6f}, {name}')
+        #print(f'{idx}: lr = {lr_group[next_num - 1]:.6f}, {name}')
 
-        
         # append layer parameters
         parameters += [{'params': [p for n, p in model.named_parameters() if n == name],
                         'lr':     lr_group[next_num - 1]}]
@@ -219,7 +216,6 @@ def train_multitask(args):
     # extension 1 done
     
     optimizer = AdamW(parameters)
-    print('made it')
     best_dev_acc = 0
 
     # Run for the specified number of epochs
@@ -251,7 +247,6 @@ def train_multitask(args):
         num_batches = 0
 
         for batch in tqdm(para_train_dataloader, desc=f'train-{epoch}', disable=TQDM_DISABLE):
-            #print(batch)
             b_ids, b_ids2, b_mask, b_mask2, b_labels = (batch['token_ids_1'], batch['token_ids_2'],
                                        batch['attention_mask_1'], batch['attention_mask_2'], batch['labels'])
 
@@ -275,7 +270,6 @@ def train_multitask(args):
         num_batches = 0
         
         for batch in tqdm(sts_train_dataloader, desc=f'train-{epoch}', disable=TQDM_DISABLE):
-            #print(batch)
             b_ids, b_ids2, b_mask, b_mask2, b_labels = (batch['token_ids_1'], batch['token_ids_2'],
                                        batch['attention_mask_1'], batch['attention_mask_2'], batch['labels'])
 
