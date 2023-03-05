@@ -222,9 +222,12 @@ def train_multitask(args):
             optimizer.zero_grad()
             logit = model.predict_paraphrase(b_ids, b_mask, b_ids2, b_mask2)
             tensor_a = b_labels.view(-1).type(torch.FloatTensor)
+            print("made it")
             tensor_b = logit.view(-1)
             tensor_a = tensor_a.to(device)
+            print("made it here")
             loss = F.cross_entropy(tensor_b, tensor_a, reduction='sum') / args.batch_size
+            print("made it to the first cross entropy")
             loss.backward()
             #loss = loss.to(model.device)
             optimizer.step()
@@ -249,8 +252,10 @@ def train_multitask(args):
             optimizer.zero_grad()
             logit = model.predict_similarity(b_ids, b_mask, b_ids2, b_mask2)
             tensor_b = logit.view(-1)
+            print("made it to the second")
             tensor_a = b_labels.view(-1).type(torch.FloatTensor)
             tensor_a = tensor_a.to(device)
+            print("made it to the second to device")
             loss = F.cross_entropy(tensor_b, tensor_a, reduction='sum') / args.batch_size
 
             loss.backward
