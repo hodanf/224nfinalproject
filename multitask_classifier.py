@@ -224,7 +224,7 @@ def train_multitask(args):
             tensor_a = b_labels.view(-1).type(torch.FloatTensor)
             tensor_b = logit.view(-1)
             tensor_a = tensor_a.to(tensor_b.device)
-            loss = F.cross_entropy(tensor_a, tensor_b, reduction='sum') / args.batch_size
+            loss = F.cross_entropy(tensor_b, tensor_a, reduction='sum') / args.batch_size
             loss.backward()
             #loss = loss.to(model.device)
             optimizer.step()
@@ -250,9 +250,9 @@ def train_multitask(args):
             logit = model.predict_similarity(b_ids, b_mask, b_ids2, b_mask2)
             tensor_b = logit.view(-1)
             tensor_a = tensor_a.to(tensor_b.device)
-            loss = F.cross_entropy(tensor_b, tensor_a, reduction='sum') / args.batch_size
+            loss = F.cross_entropy(tensor_a, tensor_b, reduction='sum') / args.batch_size
 
-            loss.backward()
+            loss.backward
             optimizer.step()
 
             train_loss['sts'] += loss
