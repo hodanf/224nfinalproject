@@ -31,6 +31,7 @@ def seed_everything(seed=11711):
 
 BERT_HIDDEN_SIZE = 768
 N_SENTIMENT_CLASSES = 5
+gradient_accumulation_steps = 2
 
 
 class MultitaskBERT(nn.Module):
@@ -197,9 +198,11 @@ def train_multitask(args):
             optimizer.zero_grad()
             logits = model.predict_sentiment(b_ids, b_mask)
             loss = F.cross_entropy(logits, b_labels.view(-1), reduction='sum') / args.batch_size
-
+            loss = loss / args.gradient_accumulation_steps
             loss.backward()
-            optimizer.step()
+            if (num_batches + 1) % gradient_accumulation_steps == 0:
+                optimizer.step()
+                optimizer.zero_grad()
 
             train_loss['sst'] += loss.item()
             num_batches += 1
@@ -229,9 +232,11 @@ def train_multitask(args):
             print("made it here")
             loss = F.cross_entropy(logit.view(-1), b_labels.view(-1).float(), reduction='sum') / args.batch_size
             print("made it to the first cross entropy")
+            loss = loss / args.gradient_accumulation_steps
             loss.backward()
-            #loss = loss.to(model.device)
-            optimizer.step()
+            if (num_batches + 1) % gradient_accumulation_steps == 0:
+                optimizer.step()
+                optimizer.zero_grad()
 
             train_loss['para'] += loss
 
@@ -258,8 +263,11 @@ def train_multitask(args):
             #print("made it to the second to device")
             loss = F.cross_entropy(logit.view(-1), b_labels.view(-1).float(), reduction='sum') / args.batch_size
 
-            loss.backward
-            optimizer.step()
+            loss = loss / args.gradient_accumulation_steps
+            loss.backward()
+            if (num_batches + 1) % gradient_accumulation_steps == 0:
+                optimizer.step()
+                optimizer.zero_grad()
 
             train_loss['sts'] += loss
             num_batches += 1
