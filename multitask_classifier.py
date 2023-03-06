@@ -239,6 +239,7 @@ def train_multitask(args):
                 optimizer.zero_grad()
 
             train_loss['para'] += loss
+            num_batches += 1
 
         train_loss['para'] = train_loss['para'] / (num_batches)
         num_batches = 0
