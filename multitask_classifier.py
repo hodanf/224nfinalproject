@@ -198,11 +198,11 @@ def train_multitask(args):
             optimizer.zero_grad()
             logits = model.predict_sentiment(b_ids, b_mask)
             loss = F.cross_entropy(logits, b_labels.view(-1), reduction='sum') / args.batch_size
-            loss = loss / 2
+            # loss = loss / 2
             loss.backward()
-            if (num_batches + 1) % 2 == 0:
-                optimizer.step()
-                optimizer.zero_grad()
+            # if (num_batches + 1) % 2 == 0:
+            #     optimizer.step()
+            #     optimizer.zero_grad()
 
             train_loss['sst'] += loss.item()
             num_batches += 1
@@ -230,14 +230,16 @@ def train_multitask(args):
             #tensor_b = logit.view(-1)
             #tensor_a = tensor_a.to(device)
             print("made it here")
-            loss = F.cross_entropy(logit.view(-1), b_labels.view(-1).float(), reduction='sum') / args.batch_size
+            m = F.Sigmoid()
+            loss = F.BCELoss(m(logit), b_labels.view(-1).float(), reduction='sum') / args.batch_size
+            #loss = F.cross_entropy(logit.view(-1), b_labels.view(-1).float(), reduction='sum') / args.batch_size
             print("made it to the first cross entropy")
-            loss = loss / 2
+            # loss = loss / 2
             loss.backward()
-            if (num_batches + 1) % 2 == 0:
-                optimizer.step()
-                optimizer.zero_grad()
-
+            # if (num_batches + 1) % 2 == 0:
+            #     optimizer.step()
+            #     optimizer.zero_grad()
+            optimizer.step()
             train_loss['para'] += loss
             num_batches += 1
 
@@ -258,18 +260,19 @@ def train_multitask(args):
             optimizer.zero_grad()
             logit = model.predict_similarity(b_ids, b_mask, b_ids2, b_mask2)
             #tensor_b = logit.view(-1)
-            #print("made it to the second")
+            print("made it to the second")
             #tensor_a = b_labels.view(-1).type(torch.FloatTensor)
             #tensor_a = tensor_a.to(device)
             #print("made it to the second to device")
-            loss = F.cross_entropy(logit.view(-1), b_labels.view(-1).float(), reduction='sum') / args.batch_size
-
-            loss = loss / 2
+            #loss = F.cross_entropy(logit.view(-1), b_labels.view(-1).float(), reduction='sum') / args.batch_size
+            m = F.Sigmoid()
+            loss = F.BCELoss(m(logit), b_labels.view(-1).float(), reduction='sum') / args.batch_size
+            # loss = loss / 2
             loss.backward()
-            if (num_batches + 1) % 2 == 0:
-                optimizer.step()
-                optimizer.zero_grad()
-
+            # if (num_batches + 1) % 2 == 0:
+            #     optimizer.step()
+            #     optimizer.zero_grad()
+            optimizer.step()
             train_loss['sts'] += loss
             num_batches += 1
 
