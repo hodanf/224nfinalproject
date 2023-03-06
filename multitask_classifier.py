@@ -198,7 +198,7 @@ def train_multitask(args):
             optimizer.zero_grad()
             logits = model.predict_sentiment(b_ids, b_mask)
             loss = F.cross_entropy(logits, b_labels.view(-1), reduction='sum') / args.batch_size
-            loss = loss / args.gradient_accumulation_steps
+            loss = loss / gradient_accumulation_steps
             loss.backward()
             if (num_batches + 1) % gradient_accumulation_steps == 0:
                 optimizer.step()
@@ -232,7 +232,7 @@ def train_multitask(args):
             print("made it here")
             loss = F.cross_entropy(logit.view(-1), b_labels.view(-1).float(), reduction='sum') / args.batch_size
             print("made it to the first cross entropy")
-            loss = loss / args.gradient_accumulation_steps
+            loss = loss / gradient_accumulation_steps
             loss.backward()
             if (num_batches + 1) % gradient_accumulation_steps == 0:
                 optimizer.step()
@@ -263,7 +263,7 @@ def train_multitask(args):
             #print("made it to the second to device")
             loss = F.cross_entropy(logit.view(-1), b_labels.view(-1).float(), reduction='sum') / args.batch_size
 
-            loss = loss / args.gradient_accumulation_steps
+            loss = loss / gradient_accumulation_steps
             loss.backward()
             if (num_batches + 1) % gradient_accumulation_steps == 0:
                 optimizer.step()
