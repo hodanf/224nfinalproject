@@ -230,8 +230,7 @@ def train_multitask(args):
             #tensor_b = logit.view(-1)
             #tensor_a = tensor_a.to(device)
             print("made it here")
-            m = F.sigmoid()
-            loss = F.binary_cross_entropy_loss(m(logit.view(-1)), b_labels.view(-1).float(), reduction='sum') / args.batch_size
+            loss = F.binary_cross_entropy_loss(F.sigmoid(logit.view(-1)), b_labels.view(-1).float(), reduction='sum') / args.batch_size
             #loss = F.cross_entropy(logit.view(-1), b_labels.view(-1).float(), reduction='sum') / args.batch_size
             print("made it to the first cross entropy")
             # loss = loss / 2
@@ -265,8 +264,8 @@ def train_multitask(args):
             #tensor_a = tensor_a.to(device)
             #print("made it to the second to device")
             #loss = F.cross_entropy(logit.view(-1), b_labels.view(-1).float(), reduction='sum') / args.batch_size
-            m = F.sigmoid()
-            loss = F.binary_cross_entropy_loss(m(logit.view(-1)), b_labels.view(-1).float(), reduction='sum') / args.batch_size
+            #m = F.sigmoid()
+            loss = F.binary_cross_entropy_loss(F.sigmoid(logit.view(-1)), b_labels.view(-1).float(), reduction='sum') / args.batch_size
             # loss = loss / 2
             loss.backward()
             # if (num_batches + 1) % 2 == 0:
