@@ -114,10 +114,8 @@ class MultitaskBERT(nn.Module):
         embeddings1 = self.forward(input_ids_1, attention_mask_1)
         embeddings2 = self.forward(input_ids_2, attention_mask_2)
         cosine_sims = cosine_similarity(embeddings1, embeddings2)
-        #logit = self.similarity(cosine_sims)
-        targets = torch.ones_like(cosine_sims)
-        loss = F.cosine_embedding_loss(embeddings1, embeddings2, targets)
-        return loss
+        sim_score = F.cosine_similarity(embeddings1, embeddings2)
+        return sim_score, embeddings1, embeddings2
     
 
 
@@ -283,8 +281,13 @@ def train_multitask(args):
             b_labels = b_labels.to(device)
 
             optimizer.zero_grad()
-            logit = model.predict_similarity(b_ids, b_mask, b_ids2, b_mask2)
-            loss = F.cross_entropy(logit.view(-1), b_labels.view(-1).type(torch.FloatTensor), reduction='sum') / args.batch_size
+            #logit = model.predict_similarity(b_ids, b_mask, b_ids2, b_mask2)
+            sim_score, _, _ = model.predict_similarity(b_ids, b_mask, b_ids2, b_mask2)
+            cos_score_trans = nn.Identity()
+            loss_MSE = nn.MSELoss()
+            sim_score = self.cos_score_transformation(sim_score)
+            loss = self.loss_MSE(sim_score, b_labels.view(-1).type(torch.FloatTensor)) / args.batch_size
+            #loss = F.cross_entropy(logit.view(-1), b_labels.view(-1).type(torch.FloatTensor), reduction='sum') / args.batch_size
 
             loss.backward()
             optimizer.step()
