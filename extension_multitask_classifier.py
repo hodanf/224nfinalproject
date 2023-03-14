@@ -108,7 +108,7 @@ class MultitaskBERT(nn.Module):
         embeddings1 = self.forward(input_ids_1, attention_mask_1)
         embeddings2 = self.forward(input_ids_2, attention_mask_2)
         sim_score = F.cosine_similarity(embeddings1, embeddings2)
-        return sim_score, embeddings1, embeddings2
+        return sim_score
     
 
 
@@ -278,8 +278,8 @@ def train_multitask(args):
             sim_score, _, _ = model.predict_similarity(b_ids, b_mask, b_ids2, b_mask2)
             cos_score_trans = nn.Identity()
             loss_MSE = nn.MSELoss()
-            sim_score = self.cos_score_transformation(sim_score)
-            loss = self.loss_MSE(sim_score, b_labels.view(-1).type(torch.FloatTensor)) / args.batch_size
+            sim_score = cos_score_transformation(sim_score)
+            loss = loss_MSE(sim_score, b_labels.view(-1).type(torch.FloatTensor)) / args.batch_size
             #loss = F.cross_entropy(logit.view(-1), b_labels.view(-1).type(torch.FloatTensor), reduction='sum') / args.batch_size
 
             loss.backward()
