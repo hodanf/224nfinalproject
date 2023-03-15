@@ -275,7 +275,7 @@ def train_multitask(args):
 
             optimizer.zero_grad()
             #logit = model.predict_similarity(b_ids, b_mask, b_ids2, b_mask2)
-            sim_score, _, _ = model.predict_similarity(b_ids, b_mask, b_ids2, b_mask2)
+            sim_score = model.predict_similarity(b_ids, b_mask, b_ids2, b_mask2)
             cos_score_trans = nn.Identity()
             loss_MSE = nn.MSELoss()
             sim_score = cos_score_trans(sim_score)
