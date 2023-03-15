@@ -13,7 +13,7 @@ from tqdm import tqdm
 from datasets import SentenceClassificationDataset, SentencePairDataset, \
     load_multitask_data, load_multitask_test_data
 
-from evaluation import model_eval_sst, test_model_multitask
+from evaluation import model_eval_sst, test_model_multitask, model_eval_multitask #added model_eval_multitask
 
 
 TQDM_DISABLE=True
@@ -252,7 +252,7 @@ def train_multitask(args):
 
             optimizer.zero_grad()
             logit = model.predict_paraphrase(b_ids, b_mask, b_ids2, b_mask2)
-            loss = F.cross_entropy(logit.view(-1), b_labels.view(-1).type(torch.FloatTensor), reduction='sum') / args.batch_size
+            loss = F.binary_cross_entropy(F.sigmoid(logit.view(-1)), b_labels.view(-1).float(), reduction='sum') / args.batch_size
 
             loss.backward()
             optimizer.step()
@@ -278,7 +278,7 @@ def train_multitask(args):
             sim_score, _, _ = model.predict_similarity(b_ids, b_mask, b_ids2, b_mask2)
             cos_score_trans = nn.Identity()
             loss_MSE = nn.MSELoss()
-            sim_score = cos_score_transformation(sim_score)
+            sim_score = cos_score_trans(sim_score)
             loss = loss_MSE(sim_score, b_labels.view(-1).type(torch.FloatTensor)) / args.batch_size
             #loss = F.cross_entropy(logit.view(-1), b_labels.view(-1).type(torch.FloatTensor), reduction='sum') / args.batch_size
 
