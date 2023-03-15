@@ -294,15 +294,16 @@ def train_multitask(args):
         train_loss['sts'] = train_loss['sts'] / (num_batches)
         
 
-        train_acc, train_f1, *_ = model_eval_multitask(sst_train_dataloader, para_train_dataloader, sts_train_dataloader, model, device)
-        dev_acc, dev_f1, *_ = model_eval_multitask(sst_dev_dataloader, para_dev_dataloader, sts_dev_dataloader, model, device)
-
-        if dev_acc > best_dev_acc:
-            best_dev_acc = dev_acc
+        train_para_acc, _, _, train_sent_acc, _, _, train_sts_corr, _, _ = model_eval_multitask(sst_train_dataloader, para_train_dataloader, sts_train_dataloader, model, device)
+        dev_para_acc, _, _, dev_sent_acc, _, _, dev_sts_corr, _, _  = model_eval_multitask(sst_dev_dataloader, para_dev_dataloader, sts_dev_dataloader, model, device)
+        if dev_para_acc > best_dev_acc:
+            best_dev_acc = dev_para_acc
             save_model(model, optimizer, args, config, args.filepath)
-
-        print(f"Epoch {epoch}: train loss :: {train_loss :.3f}, train acc :: {train_acc :.3f}, dev acc :: {dev_acc :.3f}")
         
+        print(f"Epoch {epoch}: train loss sst :: {train_loss['sst'] :.3f}, train acc :: {train_sent_acc :.3f}, dev acc :: {dev_sent_acc :.3f}")
+        print(f"Epoch {epoch}: train loss para :: {train_loss['para'] :.3f}, train acc :: {train_para_acc :.3f}, dev acc :: {dev_para_acc :.3f}")
+        print(f"Epoch {epoch}: train loss sts :: {train_loss['sts'] :.3f}, train acc :: {train_sts_corr :.3f}, dev acc :: {dev_sts_corr :.3f}")
+
 
 
 def test_model(args):
