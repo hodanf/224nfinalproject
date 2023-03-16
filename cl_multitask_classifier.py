@@ -118,9 +118,8 @@ class MultitaskBERT(nn.Module):
         ### TODO cosine similarity as an extension here
         embeddings1 = self.forward(input_ids_1, attention_mask_1)
         embeddings2 = self.forward(input_ids_2, attention_mask_2)
-        sim_score = F.cosine_similarity(embeddings1, embeddings2)
-        sim_score = torch.tensor(sim_score, requires_grad=True)
-        return sim_score
+        logit = self.similarity(torch.cat((embeddings1, embeddings2), dim=-1))
+        return logit
     
 
 
@@ -188,38 +187,38 @@ def train_multitask(args):
     model = MultitaskBERT(config)
     model = model.to(device)
 
-    # lr = args.lr
+    lr = args.lr
     
-    # extension 1: layer-wise learning rate decay
-    lr = args.layer_learning_rate[0]
-    lr_group = [lr * pow(args.layer_learning_rate_decay, 11 - i) for i in range(12)]
-    groups = [(f'layers.{i}.', lr * pow(args.layer_learning_rate_decay, 11 - i)) for i in range(12)]
-    parameters = []
-    
-    layer_names = []
-    for idx, (name, param) in enumerate(model.named_parameters()):
-        layer_names.append(name)
-        
-    parameters = []
-    
-    next_num = 1
-
-    # store params & learning rates
-    for idx, name in enumerate(layer_names):
-        
-        # display info
-        
-        if str(next_num) in name:
-            next_num += 1
-        
-        #print(f'{idx}: lr = {lr_group[next_num - 1]:.6f}, {name}')
-
-        # append layer parameters
-        parameters += [{'params': [p for n, p in model.named_parameters() if n == name],
-                        'lr':     lr_group[next_num - 1]}]
-    
-    
-    # extension 1 done
+#    # extension 1: layer-wise learning rate decay
+#    lr = args.layer_learning_rate[0]
+#    lr_group = [lr * pow(args.layer_learning_rate_decay, 11 - i) for i in range(12)]
+#    groups = [(f'layers.{i}.', lr * pow(args.layer_learning_rate_decay, 11 - i)) for i in range(12)]
+#    parameters = []
+#
+#    layer_names = []
+#    for idx, (name, param) in enumerate(model.named_parameters()):
+#        layer_names.append(name)
+#
+#    parameters = []
+#
+#    next_num = 1
+#
+#    # store params & learning rates
+#    for idx, name in enumerate(layer_names):
+#
+#        # display info
+#
+#        if str(next_num) in name:
+#            next_num += 1
+#
+#        #print(f'{idx}: lr = {lr_group[next_num - 1]:.6f}, {name}')
+#
+#        # append layer parameters
+#        parameters += [{'params': [p for n, p in model.named_parameters() if n == name],
+#                        'lr':     lr_group[next_num - 1]}]
+#
+#
+#    # extension 1 done
     
     optimizer = AdamW(parameters)
     best_dev_acc = 0
@@ -263,19 +262,15 @@ def train_multitask(args):
             b_mask2_sts = b_mask2_sts.to(device)
             b_labels_sts = b_labels_sts.to(device)
             
-            print(b_ids_sst)
-            print(b_ids_sst.shape, b_ids_para.shape, b_ids_sts.shape)
-
             optimizer.zero_grad()
-            #logit = model.predict_similarity(b_ids, b_mask, b_ids2, b_mask2)
-            sim_score = model.predict_similarity(b_ids_sts, b_mask_sts, b_ids2_sts, b_mask2_sts)
-            cos_score_trans = nn.Identity()
-            loss_MSE = nn.MSELoss()
-            sim_score = cos_score_trans(sim_score)
-            #sim_score = sim_score.to(device)
-            loss3 = loss_MSE(sim_score, b_labels_sts.view(-1).float()) / args.batch_size
-            #loss = loss.to(device)
-            #loss = F.cross_entropy(logit.view(-1), b_labels.view(-1).type(torch.FloatTensor), reduction='sum') / args.batch_size
+            logit_sts = model.predict_similarity(b_ids, b_mask, b_ids2, b_mask2)
+            #tensor_b = logit.view(-1)
+            #tensor_a = b_labels.view(-1).type(torch.FloatTensor)
+            #tensor_a = tensor_a.to(device)
+            #print("made it to the second to device")
+            #loss = F.cross_entropy(logit.view(-1), b_labels.view(-1).float(), reduction='sum') / args.batch_size
+            #m = F.sigmoid()
+            loss3 = F.binary_cross_entropy(F.sigmoid(logit_sts.view(-1)), b_labels_sts.view(-1).float(), reduction='sum') / args.batch_size
             
             #contrastive learning
             b_ids_total = torch.cat((b_ids_sst, b_ids_para, b_ids_sts), 1)
@@ -358,14 +353,14 @@ def get_args():
                         default=1e-5)
     
     # parameters for extension 1: layer-wise learning rate decay
-    parser.add_argument("--layer_learning_rate",
-                        type=float,
-                        nargs='+',
-                        default=[2e-5] * 12,
-                        help="learning rate in each group")
-    parser.add_argument("--layer_learning_rate_decay",
-                        type=float,
-                        default=0.95)
+#    parser.add_argument("--layer_learning_rate",
+#                        type=float,
+#                        nargs='+',
+#                        default=[2e-5] * 12,
+#                        help="learning rate in each group")
+#    parser.add_argument("--layer_learning_rate_decay",
+#                        type=float,
+#                        default=0.95)
 
     args = parser.parse_args()
     return args
