@@ -188,6 +188,7 @@ def train_multitask(args):
     model = model.to(device)
 
     lr = args.lr
+    optimizer = AdamW(model.parameters(), lr=lr)
     
 #    # extension 1: layer-wise learning rate decay
 #    lr = args.layer_learning_rate[0]
@@ -220,7 +221,6 @@ def train_multitask(args):
 #
 #    # extension 1 done
     
-    optimizer = AdamW(parameters)
     best_dev_acc = 0
 
     # Run for the specified number of epochs
