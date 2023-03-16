@@ -263,7 +263,7 @@ def train_multitask(args):
             b_labels_sts = b_labels_sts.to(device)
             
             optimizer.zero_grad()
-            logit_sts = model.predict_similarity(b_ids, b_mask, b_ids2, b_mask2)
+            logit_sts = model.predict_similarity(b_ids_sts, b_mask_sts, b_ids2_sts, b_mask2_sts)
             #tensor_b = logit.view(-1)
             #tensor_a = b_labels.view(-1).type(torch.FloatTensor)
             #tensor_a = tensor_a.to(device)
