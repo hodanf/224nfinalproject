@@ -236,7 +236,7 @@ def train_multitask(args):
             b_ids_sst = b_ids_sst.to(device)
             b_mask_sst = b_mask_sst.to(device)
             b_labels_sst = b_labels_sst.to(device)
-
+            print("made it")
             optimizer.zero_grad()
             logits_sst = model.predict_sentiment(b_ids_sst, b_mask_sst)
             loss1 = F.cross_entropy(logits_sst, b_labels_sst.view(-1), reduction='sum') / args.batch_size
@@ -263,8 +263,6 @@ def train_multitask(args):
             b_mask2_sts = b_mask2_sts.to(device)
             b_labels_sts = b_labels_sts.to(device)
             
-            print(b_ids_sst)
-            print(b_ids_sst.shape, b_ids_para.shape, b_ids_sts.shape)
 
             optimizer.zero_grad()
             #logit = model.predict_similarity(b_ids, b_mask, b_ids2, b_mask2)
@@ -294,7 +292,7 @@ def train_multitask(args):
             num_batches += 1
 
         train_loss = train_loss / (num_batches)
-
+        print("made it outside the loop")
         train_para_acc, _, _, train_sent_acc, _, _, train_sts_corr, _, _ = model_eval_multitask(sst_train_dataloader, para_train_dataloader, sts_train_dataloader, model, device)
         dev_para_acc, _, _, dev_sent_acc, _, _, dev_sts_corr, _, _  = model_eval_multitask(sst_dev_dataloader, para_dev_dataloader, sts_dev_dataloader, model, device)
         if dev_para_acc > best_dev_acc:
@@ -361,7 +359,7 @@ def get_args():
     parser.add_argument("--layer_learning_rate",
                         type=float,
                         nargs='+',
-                        default=[2e-5] * 12,
+                        default=[1.5e-3],
                         help="learning rate in each group")
     parser.add_argument("--layer_learning_rate_decay",
                         type=float,
