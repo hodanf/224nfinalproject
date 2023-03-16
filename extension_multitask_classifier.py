@@ -359,7 +359,7 @@ def get_args():
     parser.add_argument("--layer_learning_rate",
                         type=float,
                         nargs='+',
-                        default=[1.5e-3],
+                        default=[1.5e-5],
                         help="learning rate in each group")
     parser.add_argument("--layer_learning_rate_decay",
                         type=float,
