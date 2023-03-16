@@ -273,8 +273,11 @@ def train_multitask(args):
             loss3 = F.binary_cross_entropy(F.sigmoid(logit_sts.view(-1)), b_labels_sts.view(-1).float(), reduction='sum') / args.batch_size
             
             #contrastive learning
-            b_ids_total = torch.cat((b_ids_sst, b_ids_para, b_ids_sts), 1)
-            b_mask_total = torch.cat((b_mask_sst, b_mask_para, b_mask_sts), 1)
+            print(b_ids_para.size())
+            print(b_ids_sst.size())
+            print(b_ids_sts.size())
+            b_ids_total = torch.cat((b_ids_sst, b_ids_para, b_ids_sts), 0)
+            b_mask_total = torch.cat((b_mask_sst, b_mask_para, b_mask_sts), 0)
             contrastive_score = model.contrastive_learning(b_ids_total, b_mask_total)
             labels = torch.arange(contrastive_score.size(0)).long().to(device)
             loss4 = F.cross_entropy(contrastive_score, labels.view(-1).float()) / (args.batch_size * 3)
