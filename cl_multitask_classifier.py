@@ -239,6 +239,7 @@ def train_multitask(args):
             optimizer.zero_grad()
             logits_sst = model.predict_sentiment(b_ids_sst, b_mask_sst)
             loss1 = F.cross_entropy(logits_sst, b_labels_sst.view(-1), reduction='sum') / args.batch_size
+            print("loss1", loss1)
             
             b_ids_para, b_ids2_para, b_mask_para, b_mask2_para, b_labels_para = (batch2['token_ids_1'], batch2['token_ids_2'],
                                        batch2['attention_mask_1'], batch2['attention_mask_2'], batch2['labels'])
@@ -270,17 +271,20 @@ def train_multitask(args):
             #print("made it to the second to device")
             #loss = F.cross_entropy(logit.view(-1), b_labels.view(-1).float(), reduction='sum') / args.batch_size
             #m = F.sigmoid()
-            loss3 = F.binary_cross_entropy(F.sigmoid(logit_sts.view(-1)), b_labels_sts.view(-1).float(), reduction='sum') / args.batch_size
+            #loss3 = F.binary_cross_entropy(F.sigmoid(logit_sts.view(-1)), F.sigmoid(b_labels_sts.view(-1).float()), reduction='sum') / args.batch_size
+            loss3 = F.cross_entropy(logit_sts.view(-1), b_labels_sts.view(-1).float(), reduction='sum') / args.batch_size
+
+            print("loss3", loss3)
+            print(logit_sts)
+
             
             #contrastive learning
-            print(b_ids_para.size())
-            print(b_ids_sst.size())
-            print(b_ids_sts.size())
             b_ids_total = torch.cat((b_ids_sst, b_ids_para, b_ids_sts), 1)
             b_mask_total = torch.cat((b_mask_sst, b_mask_para, b_mask_sts), 1)
             contrastive_score = model.contrastive_learning(b_ids_total, b_mask_total)
             labels = torch.arange(contrastive_score.size(0)).long().to(device)
             loss4 = F.cross_entropy(contrastive_score, labels.view(-1).float()) / (args.batch_size * 3)
+            print("loss4", loss4)
             
             loss = loss1 + loss2 + loss3 + loss4
             

@@ -109,6 +109,7 @@ class MultitaskBERT(nn.Module):
         embeddings1 = self.forward(input_ids_1, attention_mask_1)
         embeddings2 = self.forward(input_ids_2, attention_mask_2)
         sim_score = F.cosine_similarity(embeddings1, embeddings2)
+        sim_score = sim_score * 5
         sim_score = torch.tensor(sim_score, requires_grad=True)
         return sim_score
     
@@ -253,9 +254,6 @@ def train_multitask(args):
             b_mask2_sts = b_mask2_sts.to(device)
             b_labels_sts = b_labels_sts.to(device)
             
-            print(b_ids_sst)
-            print(b_ids_sst.shape, b_ids_para.shape, b_ids_sts.shape)
-
             optimizer.zero_grad()
             #logit = model.predict_similarity(b_ids, b_mask, b_ids2, b_mask2)
             sim_score = model.predict_similarity(b_ids_sts, b_mask_sts, b_ids2_sts, b_mask2_sts)

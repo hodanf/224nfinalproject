@@ -226,13 +226,10 @@ def train_multitask(args):
             logit = model.predict_paraphrase(b_ids, b_mask, b_ids2, b_mask2)
             #tensor_a = b_labels.view(-1).type(torch.FloatTensor)
             #tensor_a = b_labels.view(-1).float()
-            print("made it")
             #tensor_b = logit.view(-1)
             #tensor_a = tensor_a.to(device)
-            print("made it here")
             loss = F.binary_cross_entropy(F.sigmoid(logit.view(-1)), b_labels.view(-1).float(), reduction='sum') / args.batch_size
             #loss = F.cross_entropy(logit.view(-1), b_labels.view(-1).float(), reduction='sum') / args.batch_size
-            print("made it to the first cross entropy")
             # loss = loss / 2
             loss.backward()
             # if (num_batches + 1) % 2 == 0:
@@ -259,13 +256,13 @@ def train_multitask(args):
             optimizer.zero_grad()
             logit = model.predict_similarity(b_ids, b_mask, b_ids2, b_mask2)
             #tensor_b = logit.view(-1)
-            print("made it to the second")
             #tensor_a = b_labels.view(-1).type(torch.FloatTensor)
             #tensor_a = tensor_a.to(device)
             #print("made it to the second to device")
             #loss = F.cross_entropy(logit.view(-1), b_labels.view(-1).float(), reduction='sum') / args.batch_size
             #m = F.sigmoid()
-            loss = F.binary_cross_entropy(F.sigmoid(logit.view(-1)), b_labels.view(-1).float(), reduction='sum') / args.batch_size
+            loss = F.binary_cross_entropy(F.sigmoid(logit.view(-1)), F.sigmoid(b_labels.view(-1).float()), reduction='sum') / args.batch_size
+            print(logit)
             # loss = loss / 2
             loss.backward()
             # if (num_batches + 1) % 2 == 0:
