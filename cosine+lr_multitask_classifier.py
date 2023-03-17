@@ -289,7 +289,7 @@ def train_multitask(args):
             best_dev_acc = dev_para_acc
             save_model(model, optimizer, args, config, args.filepath)
         
-#        print(f"Epoch {epoch}: train loss :: {train_loss :.3f}, train acc :: {train_sent_acc :.3f}, dev acc :: {dev_sent_acc :.3f}")
+        print(f"Epoch {epoch}: train loss :: {train_loss :.3f}")
 #        print(f"Epoch {epoch}: train loss para :: {train_loss['para'] :.3f}, train acc :: {train_para_acc :.3f}, dev acc :: {dev_para_acc :.3f}")
 #        print(f"Epoch {epoch}: train loss sts :: {train_loss['sts'] :.3f}, train acc :: {train_sts_corr :.3f}, dev acc :: {dev_sts_corr :.3f}")
 
@@ -349,7 +349,7 @@ def get_args():
     parser.add_argument("--layer_learning_rate",
                         type=float,
                         nargs='+',
-                        default=[2e-5] * 12,
+                        default=[1.5e-5] * 12,
                         help="learning rate in each group")
     parser.add_argument("--layer_learning_rate_decay",
                         type=float,
