@@ -266,7 +266,6 @@ def train_multitask(args):
             #sim_score = cos_score_trans(sim_score)
             #sim_score = sim_score.to(device)
             loss3 = loss_MSE(sim_score, b_labels_sts.view(-1).float()) / args.batch_size
-            print(sim_score)
             #loss = loss.to(device)
             #loss = F.cross_entropy(logit.view(-1), b_labels.view(-1).type(torch.FloatTensor), reduction='sum') / args.batch_size
             
@@ -290,8 +289,9 @@ def train_multitask(args):
             save_model(model, optimizer, args, config, args.filepath)
         
         print(f"Epoch {epoch}: train loss :: {train_loss :.3f}")
-#        print(f"Epoch {epoch}: train loss para :: {train_loss['para'] :.3f}, train acc :: {train_para_acc :.3f}, dev acc :: {dev_para_acc :.3f}")
-#        print(f"Epoch {epoch}: train loss sts :: {train_loss['sts'] :.3f}, train acc :: {train_sts_corr :.3f}, dev acc :: {dev_sts_corr :.3f}")
+        print(f"Epoch {epoch}:  train acc :: {train_para_acc :.3f}, dev acc :: {dev_para_acc :.3f}")
+        print(f"Epoch {epoch}:  train acc :: {train_sts_corr :.3f}, dev acc :: {dev_sts_corr :.3f}")
+        print(f"Epoch {epoch}:  train acc :: {train_sent_acc :.3f}, dev acc :: {dev_sent_acc :.3f}")
 
 
 
