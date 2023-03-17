@@ -53,7 +53,10 @@ class MultitaskBERT(nn.Module):
                 param.requires_grad = True
         ### TODO
         self.dropout = torch.nn.Dropout(config.hidden_dropout_prob)
-        self.sentiment_classifier = torch.nn.Linear(BERT_HIDDEN_SIZE, N_SENTIMENT_CLASSES)
+        # self.sentiment_classifier = torch.nn.Linear(BERT_HIDDEN_SIZE, N_SENTIMENT_CLASSES)
+        # self.sentiment_classifier_layer2 = torch.nn.Linear(BERT_HIDDEN_SIZE, N_SENTIMENT_CLASSES)
+        self.py_sequential = torch.nn.Sequential(torch.nn.Linear(BERT_HIDDEN_SIZE, BERT_HIDDEN_SIZE),
+                                                 torch.nn.Linear(BERT_HIDDEN_SIZE, N_SENTIMENT_CLASSES))
         self.paraphrase_classifier = torch.nn.Linear(BERT_HIDDEN_SIZE * 2, 1)
         self.similarity = torch.nn.Linear(BERT_HIDDEN_SIZE * 2, 1) # read paper
         self.similarity_projection_layer1 = torch.nn.Linear(BERT_HIDDEN_SIZE, BERT_HIDDEN_SIZE)
@@ -91,7 +94,9 @@ class MultitaskBERT(nn.Module):
         '''
         ### TODO
         embeddings = self.forward(input_ids, attention_mask)
-        logits = self.sentiment_classifier(embeddings)
+        #make sure sizes align 
+        #intermediete = self.sentiment_classifier_layer2(embeddings)
+        logits = self.py_sequential(embeddings)
         return logits
 
 
@@ -287,7 +292,7 @@ def train_multitask(args):
             loss4 = F.cross_entropy(contrastive_score, labels.view(-1).float()) / (args.batch_size * 3)
             # might do loss4/2
             
-            loss = loss1 + loss2 + loss3*2 + loss4/2
+            loss = loss1 + loss2 + loss3*2 + loss4/5
             
             loss.backward()
 
@@ -363,7 +368,7 @@ def get_args():
     parser.add_argument("--layer_learning_rate",
                         type=float,
                         nargs='+',
-                        default=[1.5e-5],
+                        default=[1.5e-5]*12,
                         help="learning rate in each group")
     parser.add_argument("--layer_learning_rate_decay",
                         type=float,
