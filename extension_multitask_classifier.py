@@ -5,7 +5,6 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
-import matplotlib.pyplot as plt
 
 from bert import BertModel
 from optimizer import AdamW
