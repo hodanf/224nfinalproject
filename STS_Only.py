@@ -228,32 +228,7 @@ def train_multitask(args):
         model.train()
         train_loss = 0
         num_batches = 0
-        for batch1, batch2, batch3 in tqdm(zip(sst_train_dataloader, para_train_dataloader, sts_train_dataloader), desc=f'train-{epoch}', disable=TQDM_DISABLE):
-            b_ids_sst, b_mask_sst, b_labels_sst = (batch1['token_ids'],
-                                       batch1['attention_mask'], batch1['labels'])
-
-            b_ids_sst = b_ids_sst.to(device)
-            b_mask_sst = b_mask_sst.to(device)
-            b_labels_sst = b_labels_sst.to(device)
-
-            optimizer.zero_grad()
-            logits_sst = model.predict_sentiment(b_ids_sst, b_mask_sst)
-            loss1 = F.cross_entropy(logits_sst, b_labels_sst.view(-1), reduction='sum') / args.batch_size
-            #print("loss1", loss1)
-            
-            b_ids_para, b_ids2_para, b_mask_para, b_mask2_para, b_labels_para = (batch2['token_ids_1'], batch2['token_ids_2'],
-                                       batch2['attention_mask_1'], batch2['attention_mask_2'], batch2['labels'])
-
-            b_ids_para = b_ids_para.to(device)
-            b_ids2_para = b_ids2_para.to(device)
-            b_mask_para = b_mask_para.to(device)
-            b_mask2_para = b_mask2_para.to(device)
-            b_labels_para = b_labels_para.to(device)
-
-            optimizer.zero_grad()
-            logit_para = model.predict_paraphrase(b_ids_para, b_mask_para, b_ids2_para, b_mask2_para)
-            loss2 = F.binary_cross_entropy(torch.sigmoid(logit_para.view(-1)), b_labels_para.view(-1).float(), reduction='sum') / args.batch_size
-            #print("loss2", loss2)
+        for batch3 in tqdm(sts_train_dataloader, desc=f'train-{epoch}', disable=TQDM_DISABLE):
             
             b_ids_sts, b_ids2_sts, b_mask_sts, b_mask2_sts, b_labels_sts = (batch3['token_ids_1'], batch3['token_ids_2'],
                                        batch3['attention_mask_1'], batch3['attention_mask_2'], batch3['labels'])
@@ -280,15 +255,8 @@ def train_multitask(args):
             #print("loss3", loss3)
 
             
-            #contrastive learning
-            b_ids_total = torch.cat((b_ids_sst, b_ids_para, b_ids_sts), 1)
-            b_mask_total = torch.cat((b_mask_sst, b_mask_para, b_mask_sts), 1)
-            contrastive_score = model.contrastive_learning(b_ids_total, b_mask_total)
-            labels = torch.arange(contrastive_score.size(0)).long().to(device)
-            loss4 = (F.cross_entropy(contrastive_score, labels.view(-1).float()) / (args.batch_size * 3))/3
-            #print("loss4", loss4)
             
-            loss = loss1 + loss2 + loss3 + loss4
+            loss = loss3
             
             loss.backward()
 
@@ -305,9 +273,9 @@ def train_multitask(args):
             best_dev_acc = dev_para_acc
             save_model(model, optimizer, args, config, args.filepath)
         
-        print(f"Epoch {epoch}: train loss :: {train_loss :.3f}")
+        #print(f"Epoch {epoch}: train loss :: {train_loss :.3f}")
 #        print(f"Epoch {epoch}: train loss para :: {train_loss['para'] :.3f}, train acc :: {train_para_acc :.3f}, dev acc :: {dev_para_acc :.3f}")
-#        print(f"Epoch {epoch}: train loss sts :: {train_loss['sts'] :.3f}, train acc :: {train_sts_corr :.3f}, dev acc :: {dev_sts_corr :.3f}")
+        print(f"Epoch {epoch}: train loss sts :: {train_loss:.3f}, train acc :: {train_sts_corr :.3f}, dev acc :: {dev_sts_corr :.3f}")
 
 
 
