@@ -55,7 +55,8 @@ class MultitaskBERT(nn.Module):
         self.dropout = torch.nn.Dropout(config.hidden_dropout_prob)
         self.sentiment_classifier = torch.nn.Linear(BERT_HIDDEN_SIZE, N_SENTIMENT_CLASSES)
         self.paraphrase_classifier = torch.nn.Linear(BERT_HIDDEN_SIZE * 2, 1)
-        self.similarity = torch.nn.Linear(BERT_HIDDEN_SIZE * 2, 1) # read paper
+        self.similarity_projection_layer1 = torch.nn.Linear(BERT_HIDDEN_SIZE, BERT_HIDDEN_SIZE)
+        self.similarity_projection_layer2 = torch.nn.Linear(BERT_HIDDEN_SIZE, BERT_HIDDEN_SIZE)
 
 
     def forward(self, input_ids, attention_mask):
@@ -108,9 +109,12 @@ class MultitaskBERT(nn.Module):
         ### TODO cosine similarity as an extension here
         embeddings1 = self.forward(input_ids_1, attention_mask_1)
         embeddings2 = self.forward(input_ids_2, attention_mask_2)
+        # put two embeddings into two layers
+        embeddings1 = self.similarity_projection_layer1(embeddings1)
+        embeddings2 = self.similarity_projection_layer2(embeddings2)
         sim_score = F.cosine_similarity(embeddings1, embeddings2)
-        sim_score = sim_score * 5
-        sim_score = torch.tensor(sim_score, requires_grad=True)
+        sim_score = (sim_score + 1) * 2.5
+        #sim_score = torch.tensor(sim_score, requires_grad=True)
         return sim_score
     
 
@@ -257,11 +261,12 @@ def train_multitask(args):
             optimizer.zero_grad()
             #logit = model.predict_similarity(b_ids, b_mask, b_ids2, b_mask2)
             sim_score = model.predict_similarity(b_ids_sts, b_mask_sts, b_ids2_sts, b_mask2_sts)
-            cos_score_trans = nn.Identity()
+            #cos_score_trans = nn.Identity()
             loss_MSE = nn.MSELoss()
-            sim_score = cos_score_trans(sim_score)
+            #sim_score = cos_score_trans(sim_score)
             #sim_score = sim_score.to(device)
             loss3 = loss_MSE(sim_score, b_labels_sts.view(-1).float()) / args.batch_size
+            print(sim_score)
             #loss = loss.to(device)
             #loss = F.cross_entropy(logit.view(-1), b_labels.view(-1).type(torch.FloatTensor), reduction='sum') / args.batch_size
             
@@ -284,7 +289,7 @@ def train_multitask(args):
             best_dev_acc = dev_para_acc
             save_model(model, optimizer, args, config, args.filepath)
         
-#        print(f"Epoch {epoch}: train loss :: {train_loss :.3f}, train acc :: {train_sent_acc :.3f}, dev acc :: {dev_sent_acc :.3f}")
+        print(f"Epoch {epoch}: train loss :: {train_loss :.3f}")
 #        print(f"Epoch {epoch}: train loss para :: {train_loss['para'] :.3f}, train acc :: {train_para_acc :.3f}, dev acc :: {dev_para_acc :.3f}")
 #        print(f"Epoch {epoch}: train loss sts :: {train_loss['sts'] :.3f}, train acc :: {train_sts_corr :.3f}, dev acc :: {dev_sts_corr :.3f}")
 
@@ -344,7 +349,11 @@ def get_args():
     parser.add_argument("--layer_learning_rate",
                         type=float,
                         nargs='+',
+<<<<<<< HEAD
                         default=[1.5e-5],
+=======
+                        default=[1.5e-5] * 12,
+>>>>>>> aa5d18ad62bf29e13c6a3f07bccdde345b142d86
                         help="learning rate in each group")
     parser.add_argument("--layer_learning_rate_decay",
                         type=float,
