@@ -310,8 +310,8 @@ def train_multitask(args):
             save_model(model, optimizer, args, config, args.filepath)
         
         print(f"Epoch {epoch}: train loss :: {train_loss :.3f}")
-        print(f"Epoch {epoch}:  para train acc :: {train_para_acc :.3f}, dev acc :: {dev_para_acc :.3f}")
         print(f"Epoch {epoch}:  sts train acc :: {train_sts_corr :.3f}, dev acc :: {dev_sts_corr :.3f}")
+        print(f"Epoch {epoch}:  para train acc :: {train_para_acc :.3f}, dev acc :: {dev_para_acc :.3f}")
         print(f"Epoch {epoch}:  sst train acc :: {train_sent_acc :.3f}, dev acc :: {dev_sent_acc :.3f}")
 
 
