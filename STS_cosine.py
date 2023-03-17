@@ -272,8 +272,8 @@ def train_multitask(args):
 
         train_para_acc, _, _, train_sent_acc, _, _, train_sts_corr, _, _ = model_eval_multitask(sst_train_dataloader, para_train_dataloader, sts_train_dataloader, model, device)
         dev_para_acc, _, _, dev_sent_acc, _, _, dev_sts_corr, _, _  = model_eval_multitask(sst_dev_dataloader, para_dev_dataloader, sts_dev_dataloader, model, device)
-        if dev_para_acc > best_dev_acc:
-            best_dev_acc = dev_para_acc
+        if dev_sts_corr > best_dev_acc:
+            best_dev_acc = dev_sts_corr
             save_model(model, optimizer, args, config, args.filepath)
         
         #print(f"Epoch {epoch}: train loss :: {train_loss :.3f}")
