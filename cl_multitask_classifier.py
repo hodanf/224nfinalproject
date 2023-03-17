@@ -75,7 +75,7 @@ class MultitaskBERT(nn.Module):
         embeddings1 = self.dropout(outputs['pooler_output'])
         embeddings2 = self.dropout(outputs['pooler_output'])
         sim_score = F.cosine_similarity(embeddings1, embeddings2)
-        sim_score = torch.tensor(sim_score, requires_grad=True)
+        #sim_score = torch.tensor(sim_score, requires_grad=True)
         # generate similarity
 
         return sim_score
@@ -253,6 +253,7 @@ def train_multitask(args):
             optimizer.zero_grad()
             logit_para = model.predict_paraphrase(b_ids_para, b_mask_para, b_ids2_para, b_mask2_para)
             loss2 = F.binary_cross_entropy(F.sigmoid(logit_para.view(-1)), b_labels_para.view(-1).float(), reduction='sum') / args.batch_size
+            print("loss2", loss2)
             
             b_ids_sts, b_ids2_sts, b_mask_sts, b_mask2_sts, b_labels_sts = (batch3['token_ids_1'], batch3['token_ids_2'],
                                        batch3['attention_mask_1'], batch3['attention_mask_2'], batch3['labels'])
@@ -272,10 +273,11 @@ def train_multitask(args):
             #loss = F.cross_entropy(logit.view(-1), b_labels.view(-1).float(), reduction='sum') / args.batch_size
             #m = F.sigmoid()
             #loss3 = F.binary_cross_entropy(F.sigmoid(logit_sts.view(-1)), F.sigmoid(b_labels_sts.view(-1).float()), reduction='sum') / args.batch_size
-            loss3 = F.cross_entropy(logit_sts.view(-1), b_labels_sts.view(-1).float(), reduction='sum') / args.batch_size
+            loss_MSE = nn.MSELoss()
+            loss3 = loss_MSE(logit_sts.view(-1), b_labels_sts.view(-1).float()) / args.batch_size
+
 
             print("loss3", loss3)
-            print(logit_sts)
 
             
             #contrastive learning

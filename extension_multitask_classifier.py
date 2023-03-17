@@ -56,6 +56,8 @@ class MultitaskBERT(nn.Module):
         self.sentiment_classifier = torch.nn.Linear(BERT_HIDDEN_SIZE, N_SENTIMENT_CLASSES)
         self.paraphrase_classifier = torch.nn.Linear(BERT_HIDDEN_SIZE * 2, 1)
         self.similarity = torch.nn.Linear(BERT_HIDDEN_SIZE * 2, 1) # read paper
+        self.similarity_projection_layer1 = torch.nn.Linear(BERT_HIDDEN_SIZE, BERT_HIDDEN_SIZE)
+        self.similarity_projection_layer2 = torch.nn.Linear(BERT_HIDDEN_SIZE, BERT_HIDDEN_SIZE)
 
 
     def forward(self, input_ids, attention_mask):
@@ -75,7 +77,7 @@ class MultitaskBERT(nn.Module):
         embeddings1 = self.dropout(outputs['pooler_output'])
         embeddings2 = self.dropout(outputs['pooler_output'])
         sim_score = F.cosine_similarity(embeddings1, embeddings2)
-        sim_score = torch.tensor(sim_score, requires_grad=True)
+        #sim_score = torch.tensor(sim_score, requires_grad=True)
         # generate similarity
 
         return sim_score
@@ -118,10 +120,13 @@ class MultitaskBERT(nn.Module):
         ### TODO cosine similarity as an extension here
         embeddings1 = self.forward(input_ids_1, attention_mask_1)
         embeddings2 = self.forward(input_ids_2, attention_mask_2)
+        # put two embeddings into two layers
+        embeddings1 = self.similarity_projection_layer1(embeddings1)
+        embeddings2 = self.similarity_projection_layer2(embeddings2)
         sim_score = F.cosine_similarity(embeddings1, embeddings2)
-        sim_score = torch.tensor(sim_score, requires_grad=True)
+        sim_score = (sim_score + 1) * 2.5
+        #sim_score = torch.tensor(sim_score, requires_grad=True)
         return sim_score
-    
 
 
 
@@ -236,7 +241,6 @@ def train_multitask(args):
             b_ids_sst = b_ids_sst.to(device)
             b_mask_sst = b_mask_sst.to(device)
             b_labels_sst = b_labels_sst.to(device)
-            print("made it")
             optimizer.zero_grad()
             logits_sst = model.predict_sentiment(b_ids_sst, b_mask_sst)
             loss1 = F.cross_entropy(logits_sst, b_labels_sst.view(-1), reduction='sum') / args.batch_size
@@ -252,7 +256,7 @@ def train_multitask(args):
 
             optimizer.zero_grad()
             logit_para = model.predict_paraphrase(b_ids_para, b_mask_para, b_ids2_para, b_mask2_para)
-            loss2 = F.binary_cross_entropy(F.sigmoid(logit_para.view(-1)), b_labels_para.view(-1).float(), reduction='sum') / args.batch_size
+            loss2 = F.binary_cross_entropy(torch.sigmoid(logit_para.view(-1)), b_labels_para.view(-1).float(), reduction='sum') / args.batch_size
             
             b_ids_sts, b_ids2_sts, b_mask_sts, b_mask2_sts, b_labels_sts = (batch3['token_ids_1'], batch3['token_ids_2'],
                                        batch3['attention_mask_1'], batch3['attention_mask_2'], batch3['labels'])
@@ -267,12 +271,12 @@ def train_multitask(args):
             optimizer.zero_grad()
             #logit = model.predict_similarity(b_ids, b_mask, b_ids2, b_mask2)
             sim_score = model.predict_similarity(b_ids_sts, b_mask_sts, b_ids2_sts, b_mask2_sts)
-            cos_score_trans = nn.Identity()
+            #cos_score_trans = nn.Identity()
             loss_MSE = nn.MSELoss()
-            sim_score = cos_score_trans(sim_score)
+            #sim_score = cos_score_trans(sim_score)
             #sim_score = sim_score.to(device)
-            loss3 = loss_MSE(sim_score, b_labels_sts.view(-1).float()) / args.batch_size
-            print(sim_score)
+            loss3 = loss_MSE(logit_sts.view(-1), b_labels_sts.view(-1).float()) / args.batch_size
+            print("loss3", loss3)
             #loss = loss.to(device)
             #loss = F.cross_entropy(logit.view(-1), b_labels.view(-1).type(torch.FloatTensor), reduction='sum') / args.batch_size
             
@@ -282,6 +286,7 @@ def train_multitask(args):
             contrastive_score = model.contrastive_learning(b_ids_total, b_mask_total)
             labels = torch.arange(contrastive_score.size(0)).long().to(device)
             loss4 = F.cross_entropy(contrastive_score, labels.view(-1).float()) / (args.batch_size * 3)
+            # might do loss4/2
             
             loss = loss1 + loss2 + loss3 + loss4
             
@@ -293,14 +298,13 @@ def train_multitask(args):
             num_batches += 1
 
         train_loss = train_loss / (num_batches)
-        print("made it outside the loop")
         train_para_acc, _, _, train_sent_acc, _, _, train_sts_corr, _, _ = model_eval_multitask(sst_train_dataloader, para_train_dataloader, sts_train_dataloader, model, device)
         dev_para_acc, _, _, dev_sent_acc, _, _, dev_sts_corr, _, _  = model_eval_multitask(sst_dev_dataloader, para_dev_dataloader, sts_dev_dataloader, model, device)
         if dev_para_acc > best_dev_acc:
             best_dev_acc = dev_para_acc
             save_model(model, optimizer, args, config, args.filepath)
         
-#        print(f"Epoch {epoch}: train loss :: {train_loss :.3f}, train acc :: {train_sent_acc :.3f}, dev acc :: {dev_sent_acc :.3f}")
+        print(f"Epoch {epoch}: train loss :: {train_loss :.3f}")
 #        print(f"Epoch {epoch}: train loss para :: {train_loss['para'] :.3f}, train acc :: {train_para_acc :.3f}, dev acc :: {dev_para_acc :.3f}")
 #        print(f"Epoch {epoch}: train loss sts :: {train_loss['sts'] :.3f}, train acc :: {train_sts_corr :.3f}, dev acc :: {dev_sts_corr :.3f}")
 
