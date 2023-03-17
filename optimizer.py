@@ -35,7 +35,7 @@ class AdamW(Optimizer):
             for p in group["params"]:
                 if p.grad is None:
                     continue
-                grad = p.grad.data
+                grad = p.grad.data #grad is here
                 if grad.is_sparse:
                     raise RuntimeError("Adam does not support sparse gradients, please consider SparseAdam instead")
 

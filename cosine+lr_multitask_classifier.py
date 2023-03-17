@@ -110,6 +110,7 @@ class MultitaskBERT(nn.Module):
         embeddings1 = self.forward(input_ids_1, attention_mask_1)
         embeddings2 = self.forward(input_ids_2, attention_mask_2)
         # put two embeddings into two layers
+        #add pytorch sequential twize for both embeddings
         embeddings1 = self.similarity_projection_layer1(embeddings1)
         embeddings2 = self.similarity_projection_layer2(embeddings2)
         sim_score = F.cosine_similarity(embeddings1, embeddings2)
@@ -349,7 +350,7 @@ def get_args():
     parser.add_argument("--layer_learning_rate",
                         type=float,
                         nargs='+',
-                        default=[1.5e-5],
+                        default=[1.5e-5]*12,
                         help="learning rate in each group")
     parser.add_argument("--layer_learning_rate_decay",
                         type=float,
