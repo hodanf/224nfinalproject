@@ -253,7 +253,6 @@ def train_multitask(args):
             #sim_score = cos_score_trans(sim_score)
             #sim_score = sim_score.to(device)
             loss3 = loss_MSE(sim_score, b_labels_sts.view(-1).float()) / args.batch_size
-            print(sim_score)
 
 
             #print("loss3", loss3)
