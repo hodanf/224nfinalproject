@@ -56,8 +56,6 @@ class MultitaskBERT(nn.Module):
         self.sentiment_classifier = torch.nn.Linear(BERT_HIDDEN_SIZE, N_SENTIMENT_CLASSES)
         self.paraphrase_classifier = torch.nn.Linear(BERT_HIDDEN_SIZE * 2, 1)
         self.similarity = torch.nn.Linear(BERT_HIDDEN_SIZE * 2, 1) # read paper
-        self.similarity_projection_layer1 = torch.nn.Linear(BERT_HIDDEN_SIZE, BERT_HIDDEN_SIZE)
-        self.similarity_projection_layer2 = torch.nn.Linear(BERT_HIDDEN_SIZE, BERT_HIDDEN_SIZE)
 
 
     def forward(self, input_ids, attention_mask):
@@ -120,13 +118,9 @@ class MultitaskBERT(nn.Module):
         ### TODO cosine similarity as an extension here
         embeddings1 = self.forward(input_ids_1, attention_mask_1)
         embeddings2 = self.forward(input_ids_2, attention_mask_2)
-        # put two embeddings into two layers
-        embeddings1 = self.similarity_projection_layer1(embeddings1)
-        embeddings2 = self.similarity_projection_layer2(embeddings2)
-        sim_score = F.cosine_similarity(embeddings1, embeddings2)
-        sim_score = (sim_score + 1) * 2.5
-        #sim_score = torch.tensor(sim_score, requires_grad=True)
-        return sim_score
+        logit = self.similarity(torch.cat((embeddings1, embeddings2), dim=-1))
+        return logit
+    
 
 
 
@@ -193,40 +187,40 @@ def train_multitask(args):
     model = MultitaskBERT(config)
     model = model.to(device)
 
-    # lr = args.lr
+    lr = args.lr
+    optimizer = AdamW(model.parameters(), lr=lr)
     
-    # extension 1: layer-wise learning rate decay
-    lr = args.layer_learning_rate[0]
-    lr_group = [lr * pow(args.layer_learning_rate_decay, 11 - i) for i in range(12)]
-    groups = [(f'layers.{i}.', lr * pow(args.layer_learning_rate_decay, 11 - i)) for i in range(12)]
-    parameters = []
+#    # extension 1: layer-wise learning rate decay
+#    lr = args.layer_learning_rate[0]
+#    lr_group = [lr * pow(args.layer_learning_rate_decay, 11 - i) for i in range(12)]
+#    groups = [(f'layers.{i}.', lr * pow(args.layer_learning_rate_decay, 11 - i)) for i in range(12)]
+#    parameters = []
+#
+#    layer_names = []
+#    for idx, (name, param) in enumerate(model.named_parameters()):
+#        layer_names.append(name)
+#
+#    parameters = []
+#
+#    next_num = 1
+#
+#    # store params & learning rates
+#    for idx, name in enumerate(layer_names):
+#
+#        # display info
+#
+#        if str(next_num) in name:
+#            next_num += 1
+#
+#        #print(f'{idx}: lr = {lr_group[next_num - 1]:.6f}, {name}')
+#
+#        # append layer parameters
+#        parameters += [{'params': [p for n, p in model.named_parameters() if n == name],
+#                        'lr':     lr_group[next_num - 1]}]
+#
+#
+#    # extension 1 done
     
-    layer_names = []
-    for idx, (name, param) in enumerate(model.named_parameters()):
-        layer_names.append(name)
-        
-    parameters = []
-    
-    next_num = 1
-
-    # store params & learning rates
-    for idx, name in enumerate(layer_names):
-        
-        # display info
-        
-        if str(next_num) in name:
-            next_num += 1
-        
-        #print(f'{idx}: lr = {lr_group[next_num - 1]:.6f}, {name}')
-
-        # append layer parameters
-        parameters += [{'params': [p for n, p in model.named_parameters() if n == name],
-                        'lr':     lr_group[next_num - 1]}]
-    
-    
-    # extension 1 done
-    
-    optimizer = AdamW(parameters)
     best_dev_acc = 0
 
     # Run for the specified number of epochs
@@ -234,29 +228,7 @@ def train_multitask(args):
         model.train()
         train_loss = 0
         num_batches = 0
-        for batch1, batch2, batch3 in tqdm(zip(sst_train_dataloader, para_train_dataloader, sts_train_dataloader), desc=f'train-{epoch}', disable=TQDM_DISABLE):
-            b_ids_sst, b_mask_sst, b_labels_sst = (batch1['token_ids'],
-                                       batch1['attention_mask'], batch1['labels'])
-
-            b_ids_sst = b_ids_sst.to(device)
-            b_mask_sst = b_mask_sst.to(device)
-            b_labels_sst = b_labels_sst.to(device)
-            optimizer.zero_grad()
-            logits_sst = model.predict_sentiment(b_ids_sst, b_mask_sst)
-            loss1 = F.cross_entropy(logits_sst, b_labels_sst.view(-1), reduction='sum') / args.batch_size
-            
-            b_ids_para, b_ids2_para, b_mask_para, b_mask2_para, b_labels_para = (batch2['token_ids_1'], batch2['token_ids_2'],
-                                       batch2['attention_mask_1'], batch2['attention_mask_2'], batch2['labels'])
-
-            b_ids_para = b_ids_para.to(device)
-            b_ids2_para = b_ids2_para.to(device)
-            b_mask_para = b_mask_para.to(device)
-            b_mask2_para = b_mask2_para.to(device)
-            b_labels_para = b_labels_para.to(device)
-
-            optimizer.zero_grad()
-            logit_para = model.predict_paraphrase(b_ids_para, b_mask_para, b_ids2_para, b_mask2_para)
-            loss2 = F.binary_cross_entropy(torch.sigmoid(logit_para.view(-1)), b_labels_para.view(-1).float(), reduction='sum') / args.batch_size
+        for batch3 in tqdm(sts_train_dataloader, desc=f'train-{epoch}', disable=TQDM_DISABLE):
             
             b_ids_sts, b_ids2_sts, b_mask_sts, b_mask2_sts, b_labels_sts = (batch3['token_ids_1'], batch3['token_ids_2'],
                                        batch3['attention_mask_1'], batch3['attention_mask_2'], batch3['labels'])
@@ -267,28 +239,24 @@ def train_multitask(args):
             b_mask2_sts = b_mask2_sts.to(device)
             b_labels_sts = b_labels_sts.to(device)
             
-
             optimizer.zero_grad()
-            #logit = model.predict_similarity(b_ids, b_mask, b_ids2, b_mask2)
-            sim_score = model.predict_similarity(b_ids_sts, b_mask_sts, b_ids2_sts, b_mask2_sts)
-            #cos_score_trans = nn.Identity()
+            logit_sts = model.predict_similarity(b_ids_sts, b_mask_sts, b_ids2_sts, b_mask2_sts)
+            #tensor_b = logit.view(-1)
+            #tensor_a = b_labels.view(-1).type(torch.FloatTensor)
+            #tensor_a = tensor_a.to(device)
+            #print("made it to the second to device")
+            #loss = F.cross_entropy(logit.view(-1), b_labels.view(-1).float(), reduction='sum') / args.batch_size
+            #m = F.sigmoid()
+            #loss3 = F.binary_cross_entropy(F.sigmoid(logit_sts.view(-1)), F.sigmoid(b_labels_sts.view(-1).float()), reduction='sum') / args.batch_size
             loss_MSE = nn.MSELoss()
-            #sim_score = cos_score_trans(sim_score)
-            #sim_score = sim_score.to(device)
             loss3 = loss_MSE(logit_sts.view(-1), b_labels_sts.view(-1).float()) / args.batch_size
-            print("loss3", loss3)
-            #loss = loss.to(device)
-            #loss = F.cross_entropy(logit.view(-1), b_labels.view(-1).type(torch.FloatTensor), reduction='sum') / args.batch_size
+
+
+            #print("loss3", loss3)
+
             
-            #contrastive learning
-            b_ids_total = torch.cat((b_ids_sst, b_ids_para, b_ids_sts), 1)
-            b_mask_total = torch.cat((b_mask_sst, b_mask_para, b_mask_sts), 1)
-            contrastive_score = model.contrastive_learning(b_ids_total, b_mask_total)
-            labels = torch.arange(contrastive_score.size(0)).long().to(device)
-            loss4 = F.cross_entropy(contrastive_score, labels.view(-1).float()) / (args.batch_size * 3)
-            # might do loss4/2
             
-            loss = loss1 + loss2 + loss3 + loss4
+            loss = loss3
             
             loss.backward()
 
@@ -298,15 +266,16 @@ def train_multitask(args):
             num_batches += 1
 
         train_loss = train_loss / (num_batches)
+
         train_para_acc, _, _, train_sent_acc, _, _, train_sts_corr, _, _ = model_eval_multitask(sst_train_dataloader, para_train_dataloader, sts_train_dataloader, model, device)
         dev_para_acc, _, _, dev_sent_acc, _, _, dev_sts_corr, _, _  = model_eval_multitask(sst_dev_dataloader, para_dev_dataloader, sts_dev_dataloader, model, device)
         if dev_para_acc > best_dev_acc:
             best_dev_acc = dev_para_acc
             save_model(model, optimizer, args, config, args.filepath)
         
-        print(f"Epoch {epoch}: train loss :: {train_loss :.3f}")
+        #print(f"Epoch {epoch}: train loss :: {train_loss :.3f}")
 #        print(f"Epoch {epoch}: train loss para :: {train_loss['para'] :.3f}, train acc :: {train_para_acc :.3f}, dev acc :: {dev_para_acc :.3f}")
-#        print(f"Epoch {epoch}: train loss sts :: {train_loss['sts'] :.3f}, train acc :: {train_sts_corr :.3f}, dev acc :: {dev_sts_corr :.3f}")
+        print(f"Epoch {epoch}: train loss sts :: {train_loss:.3f}, train acc :: {train_sts_corr :.3f}, dev acc :: {dev_sts_corr :.3f}")
 
 
 
@@ -361,14 +330,14 @@ def get_args():
                         default=1e-5)
     
     # parameters for extension 1: layer-wise learning rate decay
-    parser.add_argument("--layer_learning_rate",
-                        type=float,
-                        nargs='+',
-                        default=[1.5e-5],
-                        help="learning rate in each group")
-    parser.add_argument("--layer_learning_rate_decay",
-                        type=float,
-                        default=0.95)
+#    parser.add_argument("--layer_learning_rate",
+#                        type=float,
+#                        nargs='+',
+#                        default=[2e-5] * 12,
+#                        help="learning rate in each group")
+#    parser.add_argument("--layer_learning_rate_decay",
+#                        type=float,
+#                        default=0.95)
 
     args = parser.parse_args()
     return args
