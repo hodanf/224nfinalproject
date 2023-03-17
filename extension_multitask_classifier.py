@@ -31,6 +31,8 @@ def seed_everything(seed=11711):
 
 BERT_HIDDEN_SIZE = 768
 N_SENTIMENT_CLASSES = 5
+SIZE_LAYER_1 = 384
+SIZE_LAYER_2 = 576
 
 
 class MultitaskBERT(nn.Module):
@@ -55,11 +57,11 @@ class MultitaskBERT(nn.Module):
         self.dropout = torch.nn.Dropout(config.hidden_dropout_prob)
         # self.sentiment_classifier = torch.nn.Linear(BERT_HIDDEN_SIZE, N_SENTIMENT_CLASSES)
         # self.sentiment_classifier_layer2 = torch.nn.Linear(BERT_HIDDEN_SIZE, N_SENTIMENT_CLASSES)
-        self.py_sequential = torch.nn.Sequential(torch.nn.Linear(BERT_HIDDEN_SIZE, BERT_HIDDEN_SIZE), self.dropout, torch.nn.Linear(BERT_HIDDEN_SIZE, N_SENTIMENT_CLASSES))
+        self.py_sequential = torch.nn.Sequential(torch.nn.Linear(BERT_HIDDEN_SIZE, SIZE_LAYER_1), self.dropout, torch.nn.Linear(SIZE_LAYER_1, N_SENTIMENT_CLASSES))
         self.paraphrase_classifier = torch.nn.Linear(BERT_HIDDEN_SIZE * 2, 1)
         self.similarity = torch.nn.Linear(BERT_HIDDEN_SIZE * 2, 1) # read paper
-        self.similarity_projection_layer1 = torch.nn.Sequential(torch.nn.Linear(BERT_HIDDEN_SIZE, BERT_HIDDEN_SIZE * 0.75), torch.nn.Linear(BERT_HIDDEN_SIZE, BERT_HIDDEN_SIZE * 0.5))
-        self.similarity_projection_layer2 = torch.nn.Sequential(torch.nn.Linear(BERT_HIDDEN_SIZE, BERT_HIDDEN_SIZE * 0.75), torch.nn.Linear(BERT_HIDDEN_SIZE, BERT_HIDDEN_SIZE * 0.5))
+        self.similarity_projection_layer1 = torch.nn.Sequential(torch.nn.Linear(BERT_HIDDEN_SIZE, SIZE_LAYER_2), torch.nn.Linear(SIZE_LAYER_2, SIZE_LAYER_1))
+        self.similarity_projection_layer2 = torch.nn.Sequential(torch.nn.Linear(BERT_HIDDEN_SIZE, SIZE_LAYER_2), torch.nn.Linear(SIZE_LAYER_2, SIZE_LAYER_1))
 
 
     def forward(self, input_ids, attention_mask):
