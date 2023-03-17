@@ -275,7 +275,7 @@ def train_multitask(args):
             loss_MSE = nn.MSELoss()
             #sim_score = cos_score_trans(sim_score)
             #sim_score = sim_score.to(device)
-            loss3 = loss_MSE(logit_sts.view(-1), b_labels_sts.view(-1).float()) / args.batch_size
+            loss3 = loss_MSE(sim_score, b_labels_sts.view(-1).float()) / args.batch_size
             #loss = loss.to(device)
             #loss = F.cross_entropy(logit.view(-1), b_labels.view(-1).type(torch.FloatTensor), reduction='sum') / args.batch_size
             
