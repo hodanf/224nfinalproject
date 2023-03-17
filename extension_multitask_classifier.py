@@ -57,11 +57,11 @@ class MultitaskBERT(nn.Module):
         self.dropout = torch.nn.Dropout(config.hidden_dropout_prob)
         # self.sentiment_classifier = torch.nn.Linear(BERT_HIDDEN_SIZE, N_SENTIMENT_CLASSES)
         # self.sentiment_classifier_layer2 = torch.nn.Linear(BERT_HIDDEN_SIZE, N_SENTIMENT_CLASSES)
-        self.py_sequential = torch.nn.Sequential(torch.nn.Linear(BERT_HIDDEN_SIZE, SIZE_LAYER_1), self.dropout, torch.nn.Linear(SIZE_LAYER_1, N_SENTIMENT_CLASSES))
-        self.paraphrase_classifier = torch.nn.Linear(BERT_HIDDEN_SIZE * 2, 1)
-        self.similarity = torch.nn.Linear(BERT_HIDDEN_SIZE * 2, 1) # read paper
-        self.similarity_projection_layer1 = torch.nn.Sequential(torch.nn.Linear(BERT_HIDDEN_SIZE, SIZE_LAYER_2), torch.nn.Linear(SIZE_LAYER_2, SIZE_LAYER_1))
-        self.similarity_projection_layer2 = torch.nn.Sequential(torch.nn.Linear(BERT_HIDDEN_SIZE, SIZE_LAYER_2), torch.nn.Linear(SIZE_LAYER_2, SIZE_LAYER_1))
+        self.py_sequential = torch.nn.Sequential(torch.nn.Linear(BERT_HIDDEN_SIZE, SIZE_LAYER_1), nn.ReLU(), torch.nn.Linear(SIZE_LAYER_1, N_SENTIMENT_CLASSES))
+        self.paraphrase_classifier = torch.nn.Sequential(torch.nn.Linear(BERT_HIDDEN_SIZE * 2, BERT_HIDDEN_SIZE), nn.ReLU(), torch.nn.Linear(BERT_HIDDEN_SIZE, 1))
+        #self.similarity = torch.nn.Linear(BERT_HIDDEN_SIZE * 2, 1) # read paper
+        self.similarity_projection_layer1 = torch.nn.Sequential(torch.nn.Linear(BERT_HIDDEN_SIZE, SIZE_LAYER_2), nn.ReLU(), torch.nn.Linear(SIZE_LAYER_2, SIZE_LAYER_1))
+        self.similarity_projection_layer2 = torch.nn.Sequential(torch.nn.Linear(BERT_HIDDEN_SIZE, SIZE_LAYER_2), nn.ReLU(), torch.nn.Linear(SIZE_LAYER_2, SIZE_LAYER_1))
 
 
     def forward(self, input_ids, attention_mask):
@@ -291,9 +291,9 @@ def train_multitask(args):
             contrastive_score = model.contrastive_learning(b_ids_total, b_mask_total)
             labels = torch.arange(contrastive_score.size(0)).long().to(device)
             loss4 = F.cross_entropy(contrastive_score, labels.view(-1).float()) / (args.batch_size * 3)
-            # might do loss4/2
             
-            loss = loss1 + loss2 + loss3*1.5 + loss4/4
+            loss = loss1 + loss2 * 2.5 + loss3 * 4 + loss4/1.5
+            #print("loss1", loss1, "loss2", loss2, "loss3", loss3, "loss4", loss4)
             
             loss.backward()
 
