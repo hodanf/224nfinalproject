@@ -263,7 +263,7 @@ def train_multitask(args):
             #m = F.sigmoid()
             loss_MSE = nn.MSELoss()
             loss = loss_MSE(logit.view(-1), b_labels.view(-1).float()) / args.batch_size
-            print(logit)
+            #print(logit)
             # loss = loss / 2
             loss.backward()
             # if (num_batches + 1) % 2 == 0:
