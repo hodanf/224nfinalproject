@@ -10,8 +10,8 @@ from bert import BertModel
 from optimizer import AdamW
 from tqdm import tqdm
 
-from datasets import SentenceClassificationDataset, SentencePairDataset, \
-    load_multitask_data, load_multitask_test_data
+from datasets_additional import SentenceClassificationDataset, SentencePairDataset, \
+    load_multitask_data, load_multitask_data2, load_multitask_test_data
 
 from evaluation import model_eval_sst, test_model_multitask, model_eval_multitask #added model_eval_multitask
 
@@ -158,8 +158,8 @@ def train_multitask(args):
     # Load data
     # Create the data and its corresponding datasets and dataloader
     #SST DATASET
-    sst_train_data, num_labels,para_train_data, sts_train_data = load_multitask_data(args.sst_train,args.para_train,args.sts_train, split ='train')
-    sst_dev_data, num_labels,para_dev_data, sts_dev_data = load_multitask_data(args.sst_dev,args.para_dev,args.sts_dev, split ='train')
+    sst_train_data, num_labels,para_train_data, sts_train_data = load_multitask_data(args.sst_train,args.para_train,args.sts_train,args.sts_train2, split ='train')
+    sst_dev_data, num_labels,para_dev_data, sts_dev_data = load_multitask_data2(args.sst_dev,args.para_dev,args.sts_dev, split ='train')
 
     sst_train_data = SentenceClassificationDataset(sst_train_data, args)
     sst_dev_data = SentenceClassificationDataset(sst_dev_data, args)
@@ -286,13 +286,13 @@ def train_multitask(args):
             #loss = F.cross_entropy(logit.view(-1), b_labels.view(-1).type(torch.FloatTensor), reduction='sum') / args.batch_size
             
             #contrastive learning
-            b_ids_total = torch.cat((b_ids_sst, b_ids_para, b_ids_sts), 1)
-            b_mask_total = torch.cat((b_mask_sst, b_mask_para, b_mask_sts), 1)
-            contrastive_score = model.contrastive_learning(b_ids_total, b_mask_total)
-            labels = torch.arange(contrastive_score.size(0)).long().to(device)
-            loss4 = F.cross_entropy(contrastive_score, labels.view(-1).float()) / (args.batch_size * 3)
+#            b_ids_total = torch.cat((b_ids_sst, b_ids_para, b_ids_sts), 1)
+#            b_mask_total = torch.cat((b_mask_sst, b_mask_para, b_mask_sts), 1)
+#            contrastive_score = model.contrastive_learning(b_ids_total, b_mask_total)
+#            labels = torch.arange(contrastive_score.size(0)).long().to(device)
+#            loss4 = F.cross_entropy(contrastive_score, labels.view(-1).float()) / (args.batch_size * 3)
             
-            loss = loss1*0.6 + loss2 * 2.5 + loss3 * 2 + loss4/1.5
+            loss = loss1 + loss2 * 2.5 + loss3 * 4
             #print("loss1", loss1, "loss2", loss2, "loss3", loss3, "loss4", loss4)
             
             loss.backward()
@@ -340,6 +340,8 @@ def get_args():
     parser.add_argument("--para_test", type=str, default="data/quora-test-student.csv")
 
     parser.add_argument("--sts_train", type=str, default="data/sts-train.csv")
+    parser.add_argument("--sts_train2", type=str, default="data/SICK_train.txt")
+
     parser.add_argument("--sts_dev", type=str, default="data/sts-dev.csv")
     parser.add_argument("--sts_test", type=str, default="data/sts-test-student.csv")
 
