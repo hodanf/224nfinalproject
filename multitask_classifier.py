@@ -262,7 +262,7 @@ def train_multitask(args):
             #loss = F.cross_entropy(logit.view(-1), b_labels.view(-1).float(), reduction='sum') / args.batch_size
             #m = F.sigmoid()
             loss_MSE = nn.MSELoss()
-            loss3 = loss_MSE(logit.view(-1), b_labels.view(-1).float()) / args.batch_size
+            loss = loss_MSE(logit.view(-1), b_labels.view(-1).float()) / args.batch_size
             print(logit)
             # loss = loss / 2
             loss.backward()
