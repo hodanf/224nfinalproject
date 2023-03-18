@@ -76,15 +76,15 @@ class MultitaskBERT(nn.Module):
 
         return embeddings
         
-    def contrastive_learning(self, input_ids, attention_mask):
-        outputs = self.bert(input_ids, attention_mask)
-        embeddings1 = self.dropout(outputs['pooler_output'])
-        embeddings2 = self.dropout(outputs['pooler_output'])
-        sim_score = F.cosine_similarity(embeddings1, embeddings2)
-        #sim_score = torch.tensor(sim_score, requires_grad=True)
-        # generate similarity
-
-        return sim_score
+#    def contrastive_learning(self, input_ids, attention_mask):
+#        outputs = self.bert(input_ids, attention_mask)
+#        embeddings1 = self.dropout(outputs['pooler_output'])
+#        embeddings2 = self.dropout(outputs['pooler_output'])
+#        sim_score = F.cosine_similarity(embeddings1, embeddings2)
+#        #sim_score = torch.tensor(sim_score, requires_grad=True)
+#        # generate similarity
+#
+#        return sim_score
         
 
     def predict_sentiment(self, input_ids, attention_mask):
