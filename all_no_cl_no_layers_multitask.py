@@ -55,13 +55,11 @@ class MultitaskBERT(nn.Module):
                 param.requires_grad = True
         ### TODO
         self.dropout = torch.nn.Dropout(config.hidden_dropout_prob)
-        # self.sentiment_classifier = torch.nn.Linear(BERT_HIDDEN_SIZE, N_SENTIMENT_CLASSES)
-        # self.sentiment_classifier_layer2 = torch.nn.Linear(BERT_HIDDEN_SIZE, N_SENTIMENT_CLASSES)
-        self.py_sequential = torch.nn.Sequential(torch.nn.Linear(BERT_HIDDEN_SIZE, SIZE_LAYER_1), nn.ReLU(), torch.nn.Linear(SIZE_LAYER_1, N_SENTIMENT_CLASSES))
-        self.paraphrase_classifier = torch.nn.Sequential(torch.nn.Linear(BERT_HIDDEN_SIZE * 2, BERT_HIDDEN_SIZE), nn.ReLU(), torch.nn.Linear(BERT_HIDDEN_SIZE, 1))
-        #self.similarity = torch.nn.Linear(BERT_HIDDEN_SIZE * 2, 1) # read paper
-        self.similarity_projection_layer1 = torch.nn.Sequential(torch.nn.Linear(BERT_HIDDEN_SIZE, SIZE_LAYER_2), nn.ReLU(), torch.nn.Linear(SIZE_LAYER_2, SIZE_LAYER_1))
-        self.similarity_projection_layer2 = torch.nn.Sequential(torch.nn.Linear(BERT_HIDDEN_SIZE, SIZE_LAYER_2), nn.ReLU(), torch.nn.Linear(SIZE_LAYER_2, SIZE_LAYER_1))
+        self.dropout = torch.nn.Dropout(config.hidden_dropout_prob)
+        self.sentiment_classifier = torch.nn.Linear(BERT_HIDDEN_SIZE, N_SENTIMENT_CLASSES)
+        self.paraphrase_classifier = torch.nn.Linear(BERT_HIDDEN_SIZE * 2, 1)
+        self.similarity_projection_layer1 = torch.nn.Linear(BERT_HIDDEN_SIZE, BERT_HIDDEN_SIZE)
+        self.similarity_projection_layer2 = torch.nn.Linear(BERT_HIDDEN_SIZE, BERT_HIDDEN_SIZE)
 
 
     def forward(self, input_ids, attention_mask):
@@ -96,7 +94,7 @@ class MultitaskBERT(nn.Module):
         embeddings = self.forward(input_ids, attention_mask)
         #make sure sizes align 
         #intermediete = self.sentiment_classifier_layer2(embeddings)
-        logits = self.py_sequential(embeddings)
+        logits = self.sentiment_classifier(embeddings)
         return logits
 
 
@@ -235,7 +233,7 @@ def train_multitask(args):
     best_dev_acc = 0
 
     # Run for the specified number of epochs
-    with open("all_ext_no_cl_output.txt", "w") as file:
+    with open("all_ext_no_cl_no_layer_output.txt", "w") as file:
         for epoch in range(args.epochs):
             model.train()
             train_loss = 0
