@@ -55,13 +55,9 @@ class MultitaskBERT(nn.Module):
                 param.requires_grad = True
         ### TODO
         self.dropout = torch.nn.Dropout(config.hidden_dropout_prob)
-        # self.sentiment_classifier = torch.nn.Linear(BERT_HIDDEN_SIZE, N_SENTIMENT_CLASSES)
-        # self.sentiment_classifier_layer2 = torch.nn.Linear(BERT_HIDDEN_SIZE, N_SENTIMENT_CLASSES)
-        self.py_sequential = torch.nn.Sequential(torch.nn.Linear(BERT_HIDDEN_SIZE, SIZE_LAYER_1), nn.ReLU(), torch.nn.Linear(SIZE_LAYER_1, N_SENTIMENT_CLASSES))
-        self.paraphrase_classifier = torch.nn.Sequential(torch.nn.Linear(BERT_HIDDEN_SIZE * 2, BERT_HIDDEN_SIZE), nn.ReLU(), torch.nn.Linear(BERT_HIDDEN_SIZE, 1))
-        #self.similarity = torch.nn.Linear(BERT_HIDDEN_SIZE * 2, 1) # read paper
-        self.similarity_projection_layer1 = torch.nn.Sequential(torch.nn.Linear(BERT_HIDDEN_SIZE, SIZE_LAYER_2), nn.ReLU(), torch.nn.Linear(SIZE_LAYER_2, SIZE_LAYER_1))
-        self.similarity_projection_layer2 = torch.nn.Sequential(torch.nn.Linear(BERT_HIDDEN_SIZE, SIZE_LAYER_2), nn.ReLU(), torch.nn.Linear(SIZE_LAYER_2, SIZE_LAYER_1))
+        self.sentiment_classifier = torch.nn.Linear(BERT_HIDDEN_SIZE, N_SENTIMENT_CLASSES)
+        self.paraphrase_classifier = torch.nn.Linear(BERT_HIDDEN_SIZE * 2, 1)
+        self.similarity = torch.nn.Linear(BERT_HIDDEN_SIZE * 2, 1) # read paper
 
 
     def forward(self, input_ids, attention_mask):
@@ -70,21 +66,10 @@ class MultitaskBERT(nn.Module):
         # Here, you can start by just returning the embeddings straight from BERT.
         # When thinking of improvements, you can later try modifying this
         # (e.g., by adding other layers).
-        ### TODO
         outputs = self.bert(input_ids, attention_mask) # pretrained bert embeddings
         embeddings = self.dropout(outputs['pooler_output'])# BERT embeddings
 
         return embeddings
-        
-    def contrastive_learning(self, input_ids, attention_mask):
-        outputs = self.bert(input_ids, attention_mask)
-        embeddings1 = self.dropout(outputs['pooler_output'])
-        embeddings2 = self.dropout(outputs['pooler_output'])
-        sim_score = F.cosine_similarity(embeddings1, embeddings2)
-        #sim_score = torch.tensor(sim_score, requires_grad=True)
-        # generate similarity
-
-        return sim_score
         
 
     def predict_sentiment(self, input_ids, attention_mask):
@@ -93,12 +78,10 @@ class MultitaskBERT(nn.Module):
         (0 - negative, 1- somewhat negative, 2- neutral, 3- somewhat positive, 4- positive)
         Thus, your output should contain 5 logits for each sentence.
         '''
-        ### TODO
         embeddings = self.forward(input_ids, attention_mask)
-        #make sure sizes align 
-        #intermediete = self.sentiment_classifier_layer2(embeddings)
-        logits = self.py_sequential(embeddings)
+        logits = self.sentiment_classifier(embeddings)
         return logits
+
 
 
     def predict_paraphrase(self,
@@ -108,7 +91,6 @@ class MultitaskBERT(nn.Module):
         Note that your output should be unnormalized (a logit); it will be passed to the sigmoid function
         during evaluation, and handled as a logit by the appropriate loss function.
         '''
-        ### TODO
         embeddings1 = self.forward(input_ids_1, attention_mask_1)
         embeddings2 = self.forward(input_ids_2, attention_mask_2)
         logit = self.paraphrase_classifier(torch.cat((embeddings1, embeddings2), dim=-1))
@@ -123,16 +105,11 @@ class MultitaskBERT(nn.Module):
         Note that your output should be unnormalized (a logit); it will be passed to the sigmoid function
         during evaluation, and handled as a logit by the appropriate loss function.
         '''
-        ### TODO cosine similarity as an extension here
         embeddings1 = self.forward(input_ids_1, attention_mask_1)
         embeddings2 = self.forward(input_ids_2, attention_mask_2)
-        # put two embeddings into two layers
-        embeddings1 = self.similarity_projection_layer1(embeddings1)
-        embeddings2 = self.similarity_projection_layer2(embeddings2)
-        sim_score = F.cosine_similarity(embeddings1, embeddings2)
-        sim_score = (sim_score + 1) * 2.5
-        #sim_score = torch.tensor(sim_score, requires_grad=True)
-        return sim_score
+        logit = self.similarity(torch.cat((embeddings1, embeddings2), dim=-1))
+        return logit
+    
 
 
 
@@ -199,40 +176,40 @@ def train_multitask(args):
     model = MultitaskBERT(config)
     model = model.to(device)
 
-    # lr = args.lr
+    lr = args.lr
     
     # extension 1: layer-wise learning rate decay
-    lr = args.layer_learning_rate[0]
-    lr_group = [lr * pow(args.layer_learning_rate_decay, 11 - i) for i in range(12)]
-    groups = [(f'layers.{i}.', lr * pow(args.layer_learning_rate_decay, 11 - i)) for i in range(12)]
-    parameters = []
-    
-    layer_names = []
-    for idx, (name, param) in enumerate(model.named_parameters()):
-        layer_names.append(name)
-        
-    parameters = []
-    
-    next_num = 1
-
-    # store params & learning rates
-    for idx, name in enumerate(layer_names):
-        
-        # display info
-        
-        if str(next_num) in name:
-            next_num += 1
-        
-        #print(f'{idx}: lr = {lr_group[next_num - 1]:.6f}, {name}')
-
-        # append layer parameters
-        parameters += [{'params': [p for n, p in model.named_parameters() if n == name],
-                        'lr':     lr_group[next_num - 1]}]
-    
-    
+#    lr = args.layer_learning_rate[0]
+#    lr_group = [lr * pow(args.layer_learning_rate_decay, 11 - i) for i in range(12)]
+#    groups = [(f'layers.{i}.', lr * pow(args.layer_learning_rate_decay, 11 - i)) for i in range(12)]
+#    parameters = []
+#
+#    layer_names = []
+#    for idx, (name, param) in enumerate(model.named_parameters()):
+#        layer_names.append(name)
+#
+#    parameters = []
+#
+#    next_num = 1
+#
+#    # store params & learning rates
+#    for idx, name in enumerate(layer_names):
+#
+#        # display info
+#
+#        if str(next_num) in name:
+#            next_num += 1
+#
+#        #print(f'{idx}: lr = {lr_group[next_num - 1]:.6f}, {name}')
+#
+#        # append layer parameters
+#        parameters += [{'params': [p for n, p in model.named_parameters() if n == name],
+#                        'lr':     lr_group[next_num - 1]}]
+#
+#
     # extension 1 done
     
-    optimizer = AdamW(parameters)
+    optimizer = AdamW(model.parameters(), lr=lr)
     best_dev_acc = 0
 
     # Run for the specified number of epochs
@@ -247,6 +224,7 @@ def train_multitask(args):
             b_ids_sst = b_ids_sst.to(device)
             b_mask_sst = b_mask_sst.to(device)
             b_labels_sst = b_labels_sst.to(device)
+
             optimizer.zero_grad()
             logits_sst = model.predict_sentiment(b_ids_sst, b_mask_sst)
             loss1 = F.cross_entropy(logits_sst, b_labels_sst.view(-1), reduction='sum') / args.batch_size
@@ -273,7 +251,6 @@ def train_multitask(args):
             b_mask2_sts = b_mask2_sts.to(device)
             b_labels_sts = b_labels_sts.to(device)
             
-
             optimizer.zero_grad()
             #logit = model.predict_similarity(b_ids, b_mask, b_ids2, b_mask2)
             sim_score = model.predict_similarity(b_ids_sts, b_mask_sts, b_ids2_sts, b_mask2_sts)
@@ -281,19 +258,14 @@ def train_multitask(args):
             loss_MSE = nn.MSELoss()
             #sim_score = cos_score_trans(sim_score)
             #sim_score = sim_score.to(device)
-            loss3 = loss_MSE(sim_score, b_labels_sts.view(-1).float()) / args.batch_size
+            loss3 = loss_MSE(sim_score.view(-1), b_labels_sts.view(-1).float()) / args.batch_size
+
             #loss = loss.to(device)
             #loss = F.cross_entropy(logit.view(-1), b_labels.view(-1).type(torch.FloatTensor), reduction='sum') / args.batch_size
             
             #contrastive learning
-            b_ids_total = torch.cat((b_ids_sst, b_ids_para, b_ids_sts), 1)
-            b_mask_total = torch.cat((b_mask_sst, b_mask_para, b_mask_sts), 1)
-            contrastive_score = model.contrastive_learning(b_ids_total, b_mask_total)
-            labels = torch.arange(contrastive_score.size(0)).long().to(device)
-            loss4 = F.cross_entropy(contrastive_score, labels.view(-1).float()) / (args.batch_size * 3)
             
-            loss = loss1 + loss2 * 2.5 + loss3 * 4 + loss4/1.5
-            #print("loss1", loss1, "loss2", loss2, "loss3", loss3, "loss4", loss4)
+            loss = loss1 + loss2 * 2.5 + loss3 * 4
             
             loss.backward()
 
@@ -301,8 +273,10 @@ def train_multitask(args):
 
             train_loss += loss.item()
             num_batches += 1
+            print('done')
 
         train_loss = train_loss / (num_batches)
+
         train_para_acc, _, _, train_sent_acc, _, _, train_sts_corr, _, _ = model_eval_multitask(sst_train_dataloader, para_train_dataloader, sts_train_dataloader, model, device)
         dev_para_acc, _, _, dev_sent_acc, _, _, dev_sts_corr, _, _  = model_eval_multitask(sst_dev_dataloader, para_dev_dataloader, sts_dev_dataloader, model, device)
         if (dev_para_acc+dev_sent_acc+dev_sts_corr)/3 > best_dev_acc:
@@ -310,9 +284,10 @@ def train_multitask(args):
             save_model(model, optimizer, args, config, args.filepath)
         
         print(f"Epoch {epoch}: train loss :: {train_loss :.3f}")
-        print(f"Epoch {epoch}:  sts train acc :: {train_sts_corr :.3f}, dev acc :: {dev_sts_corr :.3f}")
-        print(f"Epoch {epoch}:  para train acc :: {train_para_acc :.3f}, dev acc :: {dev_para_acc :.3f}")
-        print(f"Epoch {epoch}:  sst train acc :: {train_sent_acc :.3f}, dev acc :: {dev_sent_acc :.3f}")
+        print(f"Epoch {epoch}:  train acc :: {train_para_acc :.3f}, dev acc :: {dev_para_acc :.3f}")
+        print(f"Epoch {epoch}:  train acc :: {train_sts_corr :.3f}, dev acc :: {dev_sts_corr :.3f}")
+        print(f"Epoch {epoch}:  train acc :: {train_sent_acc :.3f}, dev acc :: {dev_sent_acc :.3f}")
+
 
 
 def test_model(args):
@@ -360,10 +335,10 @@ def get_args():
     parser.add_argument("--sts_test_out", type=str, default="predictions/sts-test-output.csv")
 
     # hyper parameters
-    parser.add_argument("--batch_size", help='sst: 64, cfimdb: 8 can fit a 12GB GPU', type=int, default=8)
+    parser.add_argument("--batch_size", help='sst: 64, cfimdb: 8 can fit a 12GB GPU', type=int, default=16)
     parser.add_argument("--hidden_dropout_prob", type=float, default=0.3)
     parser.add_argument("--lr", type=float, help="learning rate, default lr for 'pretrain': 1e-3, 'finetune': 1e-5",
-                        default=1e-5)
+                        default=1e-3)
     
     # parameters for extension 1: layer-wise learning rate decay
     parser.add_argument("--layer_learning_rate",
