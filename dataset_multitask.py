@@ -76,15 +76,14 @@ class MultitaskBERT(nn.Module):
 
         return embeddings
         
-#    def contrastive_learning(self, input_ids, attention_mask):
-#        outputs = self.bert(input_ids, attention_mask)
-#        embeddings1 = self.dropout(outputs['pooler_output'])
-#        embeddings2 = self.dropout(outputs['pooler_output'])
-#        sim_score = F.cosine_similarity(embeddings1, embeddings2)
-#        #sim_score = torch.tensor(sim_score, requires_grad=True)
-#        # generate similarity
-#
-#        return sim_score
+    def contrastive_learning(self, input_ids, attention_mask):
+        outputs = self.bert(input_ids, attention_mask)
+        embeddings1 = self.dropout(outputs['pooler_output'])
+        embeddings2 = self.dropout(outputs['pooler_output'])
+        sim_score = F.cosine_similarity(embeddings1, embeddings2)
+        # generate similarity
+
+        return sim_score
         
 
     def predict_sentiment(self, input_ids, attention_mask):
@@ -286,13 +285,13 @@ def train_multitask(args):
             #loss = F.cross_entropy(logit.view(-1), b_labels.view(-1).type(torch.FloatTensor), reduction='sum') / args.batch_size
             
             #contrastive learning
-#            b_ids_total = torch.cat((b_ids_sst, b_ids_para, b_ids_sts), 1)
-#            b_mask_total = torch.cat((b_mask_sst, b_mask_para, b_mask_sts), 1)
-#            contrastive_score = model.contrastive_learning(b_ids_total, b_mask_total)
-#            labels = torch.arange(contrastive_score.size(0)).long().to(device)
-#            loss4 = F.cross_entropy(contrastive_score, labels.view(-1).float()) / (args.batch_size * 3)
+            b_ids_total = torch.cat((b_ids_sst, b_ids_para, b_ids_sts), 1)
+            b_mask_total = torch.cat((b_mask_sst, b_mask_para, b_mask_sts), 1)
+            contrastive_score = model.contrastive_learning(b_ids_total, b_mask_total)
+            labels = torch.arange(contrastive_score.size(0)).long().to(device)
+            loss4 = F.cross_entropy(contrastive_score, labels.view(-1).float()) / (args.batch_size * 3)
             
-            loss = loss1 + loss2 * 2.5 + loss3 * 4
+            loss = loss1 + loss2 * 2.5 + loss3 * 4 + loss4/2
             #print("loss1", loss1, "loss2", loss2, "loss3", loss3, "loss4", loss4)
             
             loss.backward()
