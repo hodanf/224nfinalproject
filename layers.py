@@ -285,7 +285,6 @@ def train_multitask(args):
 
             train_loss += loss.item()
             num_batches += 1
-            print('done')
 
         train_loss = train_loss / (num_batches)
 
