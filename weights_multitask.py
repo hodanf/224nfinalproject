@@ -131,7 +131,6 @@ def save_model(model, optimizer, args, config, filepath):
 # modify the train_multitask
 def train_multitask(args):
     device = torch.device('cuda') if args.use_gpu else torch.device('cpu')
-    torch.cuda.empty_cache()  ##empty cache
     # Load data
     # Create the data and its corresponding datasets and dataloader
     #SST DATASET
