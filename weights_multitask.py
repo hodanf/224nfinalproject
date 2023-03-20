@@ -264,7 +264,7 @@ def train_multitask(args):
             
             #contrastive learning
             
-            loss = loss1 + loss2 * 2.5 + loss3 * 4
+            loss = loss1*0.157 + loss2 * 0.096 + loss3 * 0.747
             
             loss.backward()
 
