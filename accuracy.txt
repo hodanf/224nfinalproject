@@ -1,0 +1,40 @@
+Epoch 0: train loss :: 0.487
+Epoch 0:  sts train acc :: 0.457, dev acc :: 0.343
+Epoch 0:  para train acc :: 0.712, dev acc :: 0.707
+Epoch 0:  sst train acc :: 0.608, dev acc :: 0.505
+Epoch 1: train loss :: 0.401
+Epoch 1:  sts train acc :: 0.586, dev acc :: 0.433
+Epoch 1:  para train acc :: 0.735, dev acc :: 0.728
+Epoch 1:  sst train acc :: 0.752, dev acc :: 0.520
+Epoch 2: train loss :: 0.332
+Epoch 2:  sts train acc :: 0.716, dev acc :: 0.481
+Epoch 2:  para train acc :: 0.745, dev acc :: 0.733
+Epoch 2:  sst train acc :: 0.870, dev acc :: 0.498
+Epoch 3: train loss :: 0.262
+Epoch 3:  sts train acc :: 0.783, dev acc :: 0.478
+Epoch 3:  para train acc :: 0.752, dev acc :: 0.745
+Epoch 3:  sst train acc :: 0.921, dev acc :: 0.507
+Epoch 4: train loss :: 0.206
+Epoch 4:  sts train acc :: 0.837, dev acc :: 0.504
+Epoch 4:  para train acc :: 0.760, dev acc :: 0.745
+Epoch 4:  sst train acc :: 0.922, dev acc :: 0.509
+Epoch 5: train loss :: 0.168
+Epoch 5:  sts train acc :: 0.868, dev acc :: 0.476
+Epoch 5:  para train acc :: 0.770, dev acc :: 0.755
+Epoch 5:  sst train acc :: 0.954, dev acc :: 0.514
+Epoch 6: train loss :: 0.144
+Epoch 6:  sts train acc :: 0.899, dev acc :: 0.481
+Epoch 6:  para train acc :: 0.774, dev acc :: 0.760
+Epoch 6:  sst train acc :: 0.973, dev acc :: 0.500
+Epoch 7: train loss :: 0.129
+Epoch 7:  sts train acc :: 0.909, dev acc :: 0.479
+Epoch 7:  para train acc :: 0.776, dev acc :: 0.759
+Epoch 7:  sst train acc :: 0.976, dev acc :: 0.512
+Epoch 8: train loss :: 0.121
+Epoch 8:  sts train acc :: 0.918, dev acc :: 0.475
+Epoch 8:  para train acc :: 0.787, dev acc :: 0.767
+Epoch 8:  sst train acc :: 0.988, dev acc :: 0.515
+Epoch 9: train loss :: 0.111
+Epoch 9:  sts train acc :: 0.930, dev acc :: 0.474
+Epoch 9:  para train acc :: 0.790, dev acc :: 0.766
+Epoch 9:  sst train acc :: 0.973, dev acc :: 0.494
