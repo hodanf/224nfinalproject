@@ -290,7 +290,7 @@ def train_multitask(args):
             # labels = torch.arange(contrastive_score.size(0)).long().to(device)
             # loss4 = F.cross_entropy(contrastive_score, labels.view(-1).float()) / (args.batch_size * 3)
             
-            loss = loss1*0.157 + loss2 * 0.0962 + loss3 * 0.747 
+            loss = loss1*0.22 + loss2 * 0.135 + loss3 * 0.644 
             #print("loss1", loss1, "loss2", loss2, "loss3", loss3, "loss4", loss4)
             
             loss.backward()
