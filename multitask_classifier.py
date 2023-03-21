@@ -185,96 +185,70 @@ def train_multitask(args):
     # Run for the specified number of epochs
     for epoch in range(args.epochs):
         model.train()
-        train_loss = {'sst': 0, 'para': 0, 'sts':0}
+        train_loss = 0
         num_batches = 0
-        for batch in tqdm(sst_train_dataloader, desc=f'train-{epoch}', disable=TQDM_DISABLE):
-            b_ids, b_mask, b_labels = (batch['token_ids'],
-                                       batch['attention_mask'], batch['labels'])
+        for batch1, batch2, batch3 in tqdm(zip(sst_train_dataloader, para_train_dataloader, sts_train_dataloader), desc=f'train-{epoch}', disable=TQDM_DISABLE):
+            b_ids_sst, b_mask_sst, b_labels_sst = (batch1['token_ids'],
+                                       batch1['attention_mask'], batch1['labels'])
 
-            b_ids = b_ids.to(device)
-            b_mask = b_mask.to(device)
-            b_labels = b_labels.to(device)
+            b_ids_sst = b_ids_sst.to(device)
+            b_mask_sst = b_mask_sst.to(device)
+            b_labels_sst = b_labels_sst.to(device)
 
             optimizer.zero_grad()
-            logits = model.predict_sentiment(b_ids, b_mask)
-            loss = F.cross_entropy(logits, b_labels.view(-1), reduction='sum') / args.batch_size
-            # loss = loss / 2
-            loss.backward()
-            # if (num_batches + 1) % 2 == 0:
-            #     optimizer.step()
-            #     optimizer.zero_grad()
+            logits_sst = model.predict_sentiment(b_ids_sst, b_mask_sst)
+            loss1 = F.cross_entropy(logits_sst, b_labels_sst.view(-1), reduction='sum') / args.batch_size
+            #print("loss1", loss1)
+            
+            b_ids_para, b_ids2_para, b_mask_para, b_mask2_para, b_labels_para = (batch2['token_ids_1'], batch2['token_ids_2'],
+                                       batch2['attention_mask_1'], batch2['attention_mask_2'], batch2['labels'])
 
-            train_loss['sst'] += loss.item()
-            num_batches += 1
-
-        train_loss['sst'] = train_loss['sst'] / (num_batches)
-
-        num_batches = 0
-
-        for batch in tqdm(para_train_dataloader, desc=f'train-{epoch}', disable=TQDM_DISABLE):
-            #print(batch)
-            b_ids, b_ids2, b_mask, b_mask2, b_labels = (batch['token_ids_1'], batch['token_ids_2'],
-                                       batch['attention_mask_1'], batch['attention_mask_2'], batch['labels'])
-
-            b_ids = b_ids.to(device)
-            b_ids2 = b_ids2.to(device)
-            b_mask = b_mask.to(device)
-            b_mask2 = b_mask2.to(device)
-            b_labels = b_labels.to(device)
+            b_ids_para = b_ids_para.to(device)
+            b_ids2_para = b_ids2_para.to(device)
+            b_mask_para = b_mask_para.to(device)
+            b_mask2_para = b_mask2_para.to(device)
+            b_labels_para = b_labels_para.to(device)
 
             optimizer.zero_grad()
-            logit = model.predict_paraphrase(b_ids, b_mask, b_ids2, b_mask2)
-            #tensor_a = b_labels.view(-1).type(torch.FloatTensor)
-            #tensor_a = b_labels.view(-1).float()
-            #tensor_b = logit.view(-1)
-            #tensor_a = tensor_a.to(device)
-            loss = F.binary_cross_entropy(F.sigmoid(logit.view(-1)), b_labels.view(-1).float(), reduction='sum') / args.batch_size
-            #loss = F.cross_entropy(logit.view(-1), b_labels.view(-1).float(), reduction='sum') / args.batch_size
-            # loss = loss / 2
-            loss.backward()
-            # if (num_batches + 1) % 2 == 0:
-            #     optimizer.step()
-            #     optimizer.zero_grad()
-            optimizer.step()
-            train_loss['para'] += loss
-            num_batches += 1
+            logit_para = model.predict_paraphrase(b_ids_para, b_mask_para, b_ids2_para, b_mask2_para)
+            loss2 = F.binary_cross_entropy(torch.sigmoid(logit_para.view(-1)), b_labels_para.view(-1).float(), reduction='sum') / args.batch_size
+            #print("loss2", loss2)
+            
+            b_ids_sts, b_ids2_sts, b_mask_sts, b_mask2_sts, b_labels_sts = (batch3['token_ids_1'], batch3['token_ids_2'],
+                                       batch3['attention_mask_1'], batch3['attention_mask_2'], batch3['labels'])
 
-        train_loss['para'] = train_loss['para'] / (num_batches)
-        num_batches = 0
-        
-        for batch in tqdm(sts_train_dataloader, desc=f'train-{epoch}', disable=TQDM_DISABLE):
-            #print(batch)
-            b_ids, b_ids2, b_mask, b_mask2, b_labels = (batch['token_ids_1'], batch['token_ids_2'],
-                                       batch['attention_mask_1'], batch['attention_mask_2'], batch['labels'])
-
-            b_ids = b_ids.to(device)
-            b_ids2 = b_ids2.to(device)
-            b_mask = b_mask.to(device)
-            b_mask2 = b_mask2.to(device)
-            b_labels = b_labels.to(device)
-
+            b_ids_sts = b_ids_sts.to(device)
+            b_ids2_sts = b_ids2_sts.to(device)
+            b_mask_sts = b_mask_sts.to(device)
+            b_mask2_sts = b_mask2_sts.to(device)
+            b_labels_sts = b_labels_sts.to(device)
+            
             optimizer.zero_grad()
-            logit = model.predict_similarity(b_ids, b_mask, b_ids2, b_mask2)
+            logit_sts = model.predict_similarity(b_ids_sts, b_mask_sts, b_ids2_sts, b_mask2_sts)
             #tensor_b = logit.view(-1)
             #tensor_a = b_labels.view(-1).type(torch.FloatTensor)
             #tensor_a = tensor_a.to(device)
             #print("made it to the second to device")
             #loss = F.cross_entropy(logit.view(-1), b_labels.view(-1).float(), reduction='sum') / args.batch_size
             #m = F.sigmoid()
+            #loss3 = F.binary_cross_entropy(F.sigmoid(logit_sts.view(-1)), F.sigmoid(b_labels_sts.view(-1).float()), reduction='sum') / args.batch_size
             loss_MSE = nn.MSELoss()
-            loss = loss_MSE(logit.view(-1), b_labels.view(-1).float()) / args.batch_size
-            #print(logit)
-            # loss = loss / 2
+            loss3 = loss_MSE(logit_sts.view(-1), b_labels_sts.view(-1).float()) / args.batch_size
+
+
+            #print("loss3", loss3)
+
+            
+            loss = loss1 + loss2 + loss3
+            
             loss.backward()
-            # if (num_batches + 1) % 2 == 0:
-            #     optimizer.step()
-            #     optimizer.zero_grad()
+
             optimizer.step()
-            train_loss['sts'] += loss
+
+            train_loss += loss.item()
             num_batches += 1
 
-        train_loss['sts'] = train_loss['sts'] / (num_batches)
-        
+        train_loss = train_loss / (num_batches)
 
         train_para_acc, _, _, train_sent_acc, _, _, train_sts_corr, _, _ = model_eval_multitask(sst_train_dataloader, para_train_dataloader, sts_train_dataloader, model, device)
         dev_para_acc, _, _, dev_sent_acc, _, _, dev_sts_corr, _, _  = model_eval_multitask(sst_dev_dataloader, para_dev_dataloader, sts_dev_dataloader, model, device)
